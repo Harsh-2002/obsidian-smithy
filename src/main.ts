@@ -1,6 +1,8 @@
 import { Editor, MarkdownView, Notice, Plugin } from 'obsidian';
 
 import { dryRunCommand } from './commands/dry-run';
+import { exportSettingsCommand } from './commands/export-settings';
+import { importSettingsCommand } from './commands/import-settings';
 import { insertSamplePostCommand } from './commands/insert-sample-post';
 import { newPostCommand } from './commands/new-post';
 import { openShortcodePicker } from './commands/insert-shortcode';
@@ -225,6 +227,29 @@ export default class Forge extends Plugin {
       callback: () => {
         if (!this.ready) return;
         this.openWelcomeModal();
+      },
+    });
+
+    /* ===== Export / Import settings (cross-device migration) =====
+     * Encrypted bundle of settings + 3 secrets → moves between devices
+     * via the vault. WebCrypto-only, no deps. */
+    this.addCommand({
+      id: 'export-settings',
+      name: 'Export settings…',
+      callback: () => {
+        if (!this.ready) return;
+        void exportSettingsCommand(this.app, this.settings);
+      },
+    });
+    this.addCommand({
+      id: 'import-settings',
+      name: 'Import settings…',
+      callback: () => {
+        if (!this.ready) return;
+        void importSettingsCommand(this.app, this.settings, async (next) => {
+          this.settings = next;
+          await this.persist();
+        });
       },
     });
 

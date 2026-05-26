@@ -6,8 +6,8 @@ commits the rewritten markdown directly via the GitHub REST API. No CI
 indirection, no separate CMS server, no per-image deploy — works
 identically on desktop and mobile.
 
-> **Status: v0.1.x — beta.** Distributed via BRAT for now; community
-> plugin store submission planned after the v0.2 test pass.
+> **Status: v0.5.x — beta.** Distributed via BRAT for now; community
+> plugin store submission planned after the v0.5 stability soak.
 
 ## How it works
 
@@ -39,6 +39,16 @@ Personal notes outside the configured posts folder are never touched.
 
 ## Features
 
+- **First-run welcome modal** — opens automatically on a fresh install
+  and walks you through the 3 sections to configure. Detects an
+  existing Hugo config in your vault and offers to prefill the Site
+  section.
+- **Encrypted settings export/import** — move a configured Forge
+  between devices (desktop ↔ iPhone) via a passphrase-protected file
+  that rides the vault. AES-GCM via WebCrypto, no plaintext secrets
+  ever land on disk.
+- **Insert sample post** command — drops a ready-to-publish demo post
+  so you can verify your setup end-to-end before writing real content.
 - **One-command publish** with `Mod+Shift+P` default hotkey, from any
   post in the configured posts folder
 - **Status-bar chip** shows publish freshness ("✓ published 2h ago"),
@@ -67,28 +77,63 @@ Personal notes outside the configured posts folder are never touched.
   are eligible; personal notes never touched
 - **Mobile-friendly** — responsive modal sizing, no Node-only APIs
 
-## Install (via BRAT)
+## Quick start
 
-1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin
-   from the Community plugin browser
-2. Command Palette → **BRAT: Add a beta plugin for testing**
-3. Paste this repo's URL → install
-4. Enable **Settings → Community plugins → Forge**
+1. **Install BRAT** from Community plugins.
+2. Command Palette → **BRAT: Add a beta plugin for testing** →
+   `Harsh-2002/obsidian-forge` → install.
+3. Enable **Settings → Community plugins → Forge**.
+4. The **welcome modal** opens automatically on first run and walks
+   you through the 3 sections. If you have an existing Hugo blog
+   config in your vault, it offers to prefill the Site section for
+   you.
+5. Once Test all is ✓, open a post inside the posts folder and hit
+   **Mod+Shift+P** (Cmd on Mac, Ctrl elsewhere).
 
-## Configure
+### Moving to a second device (iPhone, work laptop, etc.)
 
-**Settings → Forge** has three sections:
+1. On the device that's already configured, Command Palette →
+   **Forge: Export settings…** → enter a passphrase → file lands in
+   your vault as `forge-settings.forge-config`.
+2. Sync the vault to the second device (via Obsidian Sync, iCloud,
+   Working Copy + git, Dropbox — anything).
+3. On the second device: install Forge (BRAT), then Command Palette
+   → **Forge: Import settings…** → enter the same passphrase. Done.
+4. Run **Test all** in Settings to verify the import succeeded.
 
-- **Site** — posts folder, site base URL, default draft state
+The bundle includes your 3 secrets (PAT + S3 access key + S3 secret),
+encrypted with AES-GCM. Lose the passphrase and the file is
+unrecoverable — pick something you'll remember.
+
+### Cross-device sync options
+
+Forge runs the same publish flow on any device — you just need the
+vault visible there. Free options:
+
+- **Vault = your blog repo.** Clone the repo as your vault. On iOS
+  use Working Copy for git, Obsidian for editing. No subscriptions.
+- **iCloud Drive** (free, Apple-only).
+- **Syncthing** (free, self-hosted P2P).
+- **Dropbox / Google Drive / OneDrive** (free tier).
+- **Obsidian Sync** ($10/mo, easiest but optional).
+
+## Configure manually
+
+**Settings → Forge** has three sections, plus a 🟢/🟡/🔴 status badge
+at the top showing whether everything's wired up:
+
+- **Site** — posts folder, site base URL, default draft state.
 - **Storage** — provider preset + bucket / endpoint / region / public URL
-  base / path template / credential secret names. Click "Set value" next
-  to each secret name to enter the actual key (never typed into a regular
-  text field). Click **Test upload** to round-trip a 4-byte test object.
-- **Git** — repo owner / name / branch / PAT secret name / author /
-  commit message template. Click **Test token** to verify scope.
+  base / path template / credential secret names. Click **Create token**
+  to open your provider's API tokens page; **Set value** to enter the
+  actual key. **Test upload** round-trips a 4-byte test object.
+- **Git** — repo owner / name / branch / PAT / author / commit message
+  template. Paste `owner/repo` into the Owner field and it auto-splits.
+  **Create token** opens GitHub's PAT creation page with the right
+  scopes preselected. **Test token** verifies access.
 
-Once configured: open any post inside the posts folder, run
-**Command Palette → "Publish current post"** (or bind a hotkey).
+If you ever need the welcome modal back, Command Palette →
+**Forge: Show welcome guide**.
 
 ## Develop
 

@@ -41,8 +41,10 @@ jobs:
         run: |
           size=$(stat -c%s main.js)
           echo "main.js: ${size} bytes"
-          # Keep bundle under 80 KB; v0.1 baseline was ~48 KB.
-          if [ "$size" -gt 81920 ]; then
-            echo "::error::Bundle exceeds 80 KB ($size bytes) — investigate"
+          # Keep bundle under 100 KB. v0.1 baseline was ~48 KB; v0.5
+          # added the welcome modal, encrypted export/import, Hugo
+          # auto-detect, and the cross-device docs section.
+          if [ "$size" -gt 102400 ]; then
+            echo "::error::Bundle exceeds 100 KB ($size bytes) — investigate"
             exit 1
           fi
