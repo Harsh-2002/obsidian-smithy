@@ -38,10 +38,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     authorName: '',
     authorEmail: '',
     commitMessageTemplate: 'publish: {slug}',
-    // Default to "deploy.yml" — the standard Hugo+Pages workflow name.
-    // Users with a differently-named workflow can edit this; clearing the
-    // field disables the dispatch entirely.
-    dispatchWorkflow: 'deploy.yml',
+    // Default OFF — the user must opt in by typing the workflow file
+    // name (e.g. "deploy.yml"). This avoids harmless-but-noisy 404s on
+    // setups (like CF Pages) that have no workflow file at all.
+    dispatchWorkflow: '',
   },
 };
 

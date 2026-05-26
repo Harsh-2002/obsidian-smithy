@@ -50,10 +50,7 @@ export class ForgeSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.createEl('h2', { text: 'Forge' });
     containerEl.createEl('p', {
-      text:
-        'One-command publish for Hugo blogs. Configure your S3-compatible ' +
-        'storage and GitHub repo below, then use the "Publish current post" ' +
-        'command from inside a post.',
+      text: 'One-command publish from Obsidian to your static site.',
       cls: 'setting-item-description',
     });
 
@@ -78,60 +75,38 @@ export class ForgeSettingTab extends PluginSettingTab {
     this.sectionEls.site = this.renderSiteSection(containerEl);
     this.sectionEls.storage = this.renderStorageSection(containerEl);
     this.sectionEls.git = this.renderGitSection(containerEl);
-    this.renderCrossDeviceSection(containerEl);
+    this.renderBackupSection(containerEl);
   }
 
-  /* ===== Cross-device + Mobile ===== */
+  /* ===== Backup ===== */
 
-  private renderCrossDeviceSection(parent: HTMLElement): void {
+  private renderBackupSection(parent: HTMLElement): void {
     const c = parent.createDiv({ cls: 'forge-section' });
 
-    new Setting(c).setName('Using Forge on multiple devices').setHeading();
+    new Setting(c).setName('Backup').setHeading();
 
-    const details = c.createEl('details', { cls: 'forge-explainer' });
+    new Setting(c)
+      .setName('Export config')
+      .setDesc('Writes forge-config.json (settings + secrets) to vault root.')
+      .addButton((b) =>
+        b
+          .setButtonText('Export')
+          .setCta()
+          .onClick(async () => {
+            // @ts-expect-error — app.commands isn't in Obsidian's public types
+            this.app.commands.executeCommandById('forge:export-settings');
+          }),
+      );
 
-    details.createEl('summary', {
-      text: 'How to write on desktop AND iPhone / iPad',
-    });
-
-    const body = details.createEl('div', { cls: 'forge-explainer-body' });
-
-    body.createEl('p', {
-      text:
-        'Your Obsidian vault needs to be visible on each device. Forge runs the SAME ' +
-        'publish flow on any of them — only the vault sync layer changes.',
-    });
-
-    const list = body.createEl('ol');
-
-    list.createEl('li').setText(
-      'Vault = your blog repo (free, most self-reliant). Clone the static-site repo ' +
-        'and point Obsidian at the cloned folder. On iOS use the Working Copy app to ' +
-        'handle git; Obsidian opens the same folder. Costs nothing beyond a GitHub account.',
-    );
-    list.createEl('li').setText(
-      'iCloud Drive (free, Apple-only). Put the vault folder in iCloud — Mac, iPhone, iPad ' +
-        'all see the same files.',
-    );
-    list.createEl('li').setText(
-      'Syncthing (free, self-hosted). P2P sync between your devices. Best if they share a LAN.',
-    );
-    list.createEl('li').setText(
-      'Dropbox / Google Drive / OneDrive (free tier). Drop the vault folder into any cloud ' +
-        'storage app and open it from Obsidian.',
-    );
-    list.createEl('li').setText(
-      'Obsidian Sync ($10/mo). Easiest, but optional — every other path on this list is free.',
-    );
-
-    body.createEl('p', {
-      cls: 'setting-item-description',
-      text:
-        "Heads up: secrets (PAT, S3 keys) DON'T sync via the vault — they live in Obsidian's " +
-        "encrypted secret storage. You'll re-enter them once per device, or use the " +
-        '"Forge: Export settings…" command (coming in v0.5 Tier 5) to migrate them via a ' +
-        'passphrase-protected file.',
-    });
+    new Setting(c)
+      .setName('Import config')
+      .setDesc('Loads forge-config.json from the vault and applies it.')
+      .addButton((b) =>
+        b.setButtonText('Import').onClick(async () => {
+          // @ts-expect-error — app.commands isn't in Obsidian's public types
+          this.app.commands.executeCommandById('forge:import-settings');
+        }),
+      );
   }
 
   /* ===== Site ===== */
@@ -224,10 +199,11 @@ export class ForgeSettingTab extends PluginSettingTab {
       PROVIDER_PRESETS[this.host.settings.storage.preset]?.note;
 
     if (presetNote) {
+      // Inline note styled to sit cleanly under the dropdown without
+      // breaking the card's visual edge.
       c.createEl('div', {
         text: presetNote,
-        cls: 'setting-item-description',
-        attr: { style: 'margin-top: -8px; margin-bottom: 12px;' },
+        cls: 'setting-item-description forge-preset-note',
       });
     }
 
@@ -451,32 +427,6 @@ export class ForgeSettingTab extends PluginSettingTab {
     const c = parent.createDiv({ cls: 'forge-section forge-section-git' });
 
     new Setting(c).setName('Git').setHeading();
-
-    // Why-a-PAT explainer (collapsible). Common new-user question:
-    // "if I have the repo cloned with write access, why do I need a
-    // PAT?" — Forge doesn't use git at all, it uses GitHub's REST API
-    // so the same flow works on iPhone. The PAT replaces SSH keys + git
-    // credential helpers.
-    const explainer = c.createEl('details', { cls: 'forge-explainer' });
-
-    explainer.createEl('summary', {
-      text: 'Why does Forge need a PAT instead of using git push?',
-    });
-    const body = explainer.createEl('div', { cls: 'forge-explainer-body' });
-
-    body.createEl('p', {
-      text:
-        "Forge talks to GitHub's web API instead of running `git push`. " +
-        'This is on purpose: the same code works on desktop AND iPhone — ' +
-        'no git binary, no SSH keys, no credential helpers per device.',
-    });
-    body.createEl('p', {
-      text:
-        'A Personal Access Token is your write access for that API. One ' +
-        'secret, set once per device, works the same everywhere. Your ' +
-        'vault never has to be a git clone — Forge bridges it to the ' +
-        'remote repo for you.',
-    });
 
     new Setting(c)
       .setName('Repo owner')
