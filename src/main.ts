@@ -17,7 +17,7 @@ import { undoLastPublishCommand, canUndoPublish } from './commands/undo-publish'
 import { uploadSingleAttachment } from './commands/upload-single';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
 import { hasSecretStorageRuntime } from './secrets';
-import { ForgeSettingTab } from './ui/settings-tab';
+import { SmithySettingTab } from './ui/settings-tab';
 import { StatusBarChip } from './ui/status-bar';
 import { WelcomeModal } from './ui/welcome-modal';
 import { isFreshInstall } from './util/check-configured';
@@ -25,7 +25,7 @@ import { attachPasteRenameListener } from './util/pasted-image-rename';
 import type { PluginSettings } from './types';
 
 /**
- * Forge — publish posts from your Obsidian vault to a static-site repo
+ * Smithy — publish posts from your Obsidian vault to a static-site repo
  * on GitHub, with S3-compatible attachment uploads.
  *
  * Lifecycle:
@@ -36,7 +36,7 @@ import type { PluginSettings } from './types';
  *   onunload()            ← Plugin auto-cleans registerEvent /
  *                           registerInterval / addStatusBarItem
  */
-export default class Forge extends Plugin {
+export default class Smithy extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
 
   /** Flipped true once deferred init has loaded settings. */
@@ -46,7 +46,7 @@ export default class Forge extends Plugin {
   private chip: StatusBarChip | null = null;
 
   async onload() {
-    this.addSettingTab(new ForgeSettingTab(this.app, this, this));
+    this.addSettingTab(new SmithySettingTab(this.app, this, this));
 
     /* ===== Publish current post (Mod+Shift+P default hotkey) ===== */
     this.addCommand({
@@ -270,7 +270,7 @@ export default class Forge extends Plugin {
 
     if (!hasSecretStorageRuntime(this.app)) {
       console.warn(
-        '[forge] app.secretStorage not available; ' +
+        '[smithy] app.secretStorage not available; ' +
           'using vault-scoped localStorage as a fallback. ' +
           'Update Obsidian to 1.5+ for the proper API.',
       );
@@ -287,10 +287,10 @@ export default class Forge extends Plugin {
         if (this.chip?.isPublishing()) return;
         // Always publish on click. Lint warnings surface in the publish
         // modal (non-blocking) and via the ⚠ N badge on the chip. There's
-        // a separate command "Forge: show lint details" for inspecting
+        // a separate command "Smithy: show lint details" for inspecting
         // warnings without publishing.
         // @ts-expect-error — app.commands isn't in Obsidian's public types
-        this.app.commands.executeCommandById('forge:publish-current-post');
+        this.app.commands.executeCommandById('smithy:publish-current-post');
       },
     });
 
@@ -321,13 +321,13 @@ export default class Forge extends Plugin {
         // @ts-expect-error — Obsidian's setting object isn't in public types
         this.app.setting.open();
         // @ts-expect-error — same
-        this.app.setting.openTabById('forge');
+        this.app.setting.openTabById('smithy');
       },
       jumpTo: (which) => {
         // The settings tab handles scroll-to-section via a class hook.
         // We defer to next tick so the tab DOM exists when we query.
         setTimeout(() => {
-          const el = document.querySelector(`.forge-section-${which}`);
+          const el = document.querySelector(`.smithy-section-${which}`);
 
           if (el instanceof HTMLElement) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -341,7 +341,7 @@ export default class Forge extends Plugin {
         // @ts-expect-error — app.setting not in Obsidian's public types
         this.app.setting.open();
         // @ts-expect-error — app.setting not in Obsidian's public types
-        this.app.setting.openTabById('forge');
+        this.app.setting.openTabById('smithy');
       },
       markDismissed: async () => {
         this.settings.welcomeModalDismissed = true;

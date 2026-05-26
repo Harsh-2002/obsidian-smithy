@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * Vitest config for Forge.
+ * Vitest config for Smithy.
  *
  * Tests live alongside source files as `*.test.ts`. We only test the
  * PURE logic — markdown walker regex, frontmatter parser, path

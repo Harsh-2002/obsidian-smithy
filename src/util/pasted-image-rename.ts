@@ -44,8 +44,8 @@ export function attachPasteRenameListener(ctx: PasteRenameContext): () => void {
   // notice so the user knows the toggle is being ignored.
   if (hasCustomAttachmentLocation(ctx.app) && ctx.settings.autoRenameScreenshots) {
     new Notice(
-      'Forge: auto-rename screenshots disabled (Custom Attachment Location plugin detected). ' +
-        'Disable that plugin if you want Forge to handle naming.',
+      'Smithy: auto-rename screenshots disabled (Custom Attachment Location plugin detected). ' +
+        'Disable that plugin if you want Smithy to handle naming.',
       8000,
     );
 

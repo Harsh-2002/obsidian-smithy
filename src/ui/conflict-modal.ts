@@ -103,7 +103,7 @@ export class ConflictModal extends Modal {
               statusEl.setText(changed ? 'Pull complete. Retrying…' : 'Pull finished (no local change detected). Retrying…');
               if (!changed) {
                 new Notice(
-                  'Forge: pull completed but this file didn\'t change — ' +
+                  'Smithy: pull completed but this file didn\'t change — ' +
                     'retry will likely hit the same conflict if the cause was elsewhere.',
                   10_000,
                 );

@@ -6,7 +6,7 @@ import type { PipelinePhase } from '../publish/pipeline';
 import type { FrontmatterIssue, PluginSettings } from '../types';
 
 /**
- * Status-bar chip — the always-visible Forge UI element.
+ * Status-bar chip — the always-visible Smithy UI element.
  *
  * Three states, one chip:
  *
@@ -17,7 +17,7 @@ import type { FrontmatterIssue, PluginSettings } from '../types';
  *        "○ Not yet published"           (no last_published in frontmatter)
  *   3. **Publishing** — shows current phase + spinner, clickable to open
  *      the detailed PublishModal:
- *        "⟳ Forge — Uploading 3/7"
+ *        "⟳ Smithy — Uploading 3/7"
  *
  * Click handling: when in "publishing" state, opens the publish modal
  * for detail. When idle on a post, clicking runs the publish command.
@@ -50,7 +50,7 @@ export class StatusBarChip {
     private readonly host: StatusBarHost,
   ) {
     this.el = rootEl;
-    this.el.addClass('forge-status-bar');
+    this.el.addClass('smithy-status-bar');
     this.el.style.cursor = 'pointer';
 
     this.el.addEventListener('click', () => {
@@ -135,7 +135,7 @@ export class StatusBarChip {
   /** Open a Notice listing the current lint issues. Called on chip click. */
   showLintDetail(): void {
     if (this.lintIssues.length === 0) {
-      new Notice('Forge — no lint issues 👍', 4000);
+      new Notice('Smithy — no lint issues 👍', 4000);
       return;
     }
 
@@ -143,7 +143,7 @@ export class StatusBarChip {
       .map((i) => `${i.severity === 'warn' ? '⚠' : 'ℹ'} ${i.field}: ${i.message}`)
       .join('\n');
 
-    new Notice(`Forge lint:\n${body}`, 10_000);
+    new Notice(`Smithy lint:\n${body}`, 10_000);
   }
 
   /**
@@ -190,8 +190,8 @@ export class StatusBarChip {
     const label = phaseLabel(this.currentPhase);
     const text =
       this.currentPhase === 'upload' && this.uploadStatus
-        ? `⟳ Forge — ${this.uploadStatus}`
-        : `⟳ Forge — ${label}…`;
+        ? `⟳ Smithy — ${this.uploadStatus}`
+        : `⟳ Smithy — ${label}…`;
 
     this.el.createEl('span', { text });
     this.el.setAttr('aria-label', 'Publish in progress. Click for details.');
@@ -208,7 +208,7 @@ export class StatusBarChip {
 
     if (!lastPublished && !history?.publishedMtime) {
       glyph = '○';
-      text = 'Forge — not yet published';
+      text = 'Smithy — not yet published';
     } else if (history?.publishedMtime) {
       // Authoritative comparison: mtime-vs-mtime, no race with the
       // frontmatter write. `publishedMtime` was captured AFTER the
@@ -216,13 +216,13 @@ export class StatusBarChip {
       // actually edited.
       if (fileMtime > history.publishedMtime + 1000) {
         glyph = '●';
-        text = 'Forge — unpublished changes';
+        text = 'Smithy — unpublished changes';
       } else {
         const stampDate =
           lastPublished ?? new Date(history.publishedAt);
 
         glyph = '✓';
-        text = `Forge — published ${relativeTime(stampDate)}`;
+        text = `Smithy — published ${relativeTime(stampDate)}`;
       }
     } else if (
       lastPublished &&
@@ -232,10 +232,10 @@ export class StatusBarChip {
       // history). 1s tolerance — the frontmatter writeback bumps mtime
       // a tiny bit after the stamp.
       glyph = '●';
-      text = 'Forge — unpublished changes';
+      text = 'Smithy — unpublished changes';
     } else {
       glyph = '✓';
-      text = `Forge — published ${relativeTime(lastPublished as Date)}`;
+      text = `Smithy — published ${relativeTime(lastPublished as Date)}`;
     }
 
     // Surface lint warnings as a trailing badge so the chip stays compact

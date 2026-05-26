@@ -365,7 +365,7 @@ export async function publishPost(
     publishedMtime = postFile.stat.mtime;
   } catch (e) {
 
-    console.warn('[forge] could not write last_published stamp:', e);
+    console.warn('[smithy] could not write last_published stamp:', e);
   }
 
   // Hand the undo data to the caller (plugin shell saves it to settings).
@@ -399,13 +399,13 @@ export async function publishPost(
         report.workflowDispatched = false;
         report.workflowDispatchError = `HTTP ${r.status}${r.message ? `: ${r.message.slice(0, 200)}` : ''}`;
 
-        console.warn('[forge] workflow dispatch failed:', r);
+        console.warn('[smithy] workflow dispatch failed:', r);
       }
     } catch (e) {
       report.workflowDispatched = false;
       report.workflowDispatchError = e instanceof Error ? e.message : String(e);
 
-      console.warn('[forge] workflow dispatch threw:', e);
+      console.warn('[smithy] workflow dispatch threw:', e);
     }
   }
 

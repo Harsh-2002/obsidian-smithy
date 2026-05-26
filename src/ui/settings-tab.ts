@@ -32,7 +32,7 @@ export interface SettingsTabHost {
   persist(): Promise<void>;
 }
 
-export class ForgeSettingTab extends PluginSettingTab {
+export class SmithySettingTab extends PluginSettingTab {
   constructor(
     app: App,
     private readonly host: SettingsTabHost,
@@ -48,7 +48,7 @@ export class ForgeSettingTab extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Forge' });
+    containerEl.createEl('h2', { text: 'Smithy' });
     containerEl.createEl('p', {
       text: 'One-command publish from Obsidian to your static site.',
       cls: 'setting-item-description',
@@ -81,30 +81,30 @@ export class ForgeSettingTab extends PluginSettingTab {
   /* ===== Backup ===== */
 
   private renderBackupSection(parent: HTMLElement): void {
-    const c = parent.createDiv({ cls: 'forge-section' });
+    const c = parent.createDiv({ cls: 'smithy-section' });
 
     new Setting(c).setName('Backup').setHeading();
 
     new Setting(c)
       .setName('Export config')
-      .setDesc('Writes forge-config.json (settings + secrets) to vault root.')
+      .setDesc('Writes smithy-config.json (settings + secrets) to vault root.')
       .addButton((b) =>
         b
           .setButtonText('Export')
           .setCta()
           .onClick(async () => {
             // @ts-expect-error — app.commands isn't in Obsidian's public types
-            this.app.commands.executeCommandById('forge:export-settings');
+            this.app.commands.executeCommandById('smithy:export-settings');
           }),
       );
 
     new Setting(c)
       .setName('Import config')
-      .setDesc('Loads forge-config.json from the vault and applies it.')
+      .setDesc('Loads smithy-config.json from the vault and applies it.')
       .addButton((b) =>
         b.setButtonText('Import').onClick(async () => {
           // @ts-expect-error — app.commands isn't in Obsidian's public types
-          this.app.commands.executeCommandById('forge:import-settings');
+          this.app.commands.executeCommandById('smithy:import-settings');
         }),
       );
   }
@@ -112,7 +112,7 @@ export class ForgeSettingTab extends PluginSettingTab {
   /* ===== Site ===== */
 
   private renderSiteSection(parent: HTMLElement): HTMLElement {
-    const c = parent.createDiv({ cls: 'forge-section forge-section-site' });
+    const c = parent.createDiv({ cls: 'smithy-section smithy-section-site' });
 
     new Setting(c).setName('Site').setHeading();
 
@@ -172,7 +172,7 @@ export class ForgeSettingTab extends PluginSettingTab {
   /* ===== Storage ===== */
 
   private renderStorageSection(parent: HTMLElement): HTMLElement {
-    const c = parent.createDiv({ cls: 'forge-section forge-section-storage' });
+    const c = parent.createDiv({ cls: 'smithy-section smithy-section-storage' });
 
     new Setting(c).setName('Storage').setHeading();
 
@@ -203,7 +203,7 @@ export class ForgeSettingTab extends PluginSettingTab {
       // breaking the card's visual edge.
       c.createEl('div', {
         text: presetNote,
-        cls: 'setting-item-description forge-preset-note',
+        cls: 'setting-item-description smithy-preset-note',
       });
     }
 
@@ -390,7 +390,7 @@ export class ForgeSettingTab extends PluginSettingTab {
       });
       const key = await renderKey(this.host.settings.storage.pathTemplate, {
         date: new Date(),
-        slug: '_forge-test',
+        slug: '_smithy-test',
         filename: 'test.txt',
         bytes: new TextEncoder().encode('test').buffer,
       });
@@ -424,7 +424,7 @@ export class ForgeSettingTab extends PluginSettingTab {
   /* ===== Git ===== */
 
   private renderGitSection(parent: HTMLElement): HTMLElement {
-    const c = parent.createDiv({ cls: 'forge-section forge-section-git' });
+    const c = parent.createDiv({ cls: 'smithy-section smithy-section-git' });
 
     new Setting(c).setName('Git').setHeading();
 
@@ -503,7 +503,7 @@ export class ForgeSettingTab extends PluginSettingTab {
             // setup in their UI.
             const url =
               'https://github.com/settings/tokens/new' +
-              '?description=Forge%20publish%20token' +
+              '?description=Smithy%20publish%20token' +
               '&scopes=repo';
 
             window.open(url, '_blank', 'noopener,noreferrer');
@@ -651,7 +651,7 @@ export class ForgeSettingTab extends PluginSettingTab {
         });
         const key = await renderKey(this.host.settings.storage.pathTemplate, {
           date: new Date(),
-          slug: '_forge-test',
+          slug: '_smithy-test',
           filename: 'test.txt',
           bytes: new TextEncoder().encode('test').buffer,
         });
@@ -695,7 +695,7 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
     }
 
-    new Notice(`Forge test — ${parts.join('\n')}`, 12000);
+    new Notice(`Smithy test — ${parts.join('\n')}`, 12000);
   }
 }
 

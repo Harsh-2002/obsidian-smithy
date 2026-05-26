@@ -1,4 +1,4 @@
-# Forge
+# Smithy
 
 Publish posts from your Obsidian vault to a static-site repo (Hugo in v1)
 with one command. Uploads attachments to any S3-compatible storage and
@@ -44,7 +44,7 @@ Personal notes outside the configured posts folder are never touched.
   existing Hugo config in your vault and offers to prefill the Site
   section.
 - **One-click settings export/import** — back up or migrate a
-  configured Forge via a single `forge-config.json` file. Plain JSON,
+  configured Smithy via a single `smithy-config.json` file. Plain JSON,
   human-readable, contains your settings + the 3 secrets. Keep the
   file private.
 - **Insert sample post** command — drops a ready-to-publish demo post
@@ -81,8 +81,8 @@ Personal notes outside the configured posts folder are never touched.
 
 1. **Install BRAT** from Community plugins.
 2. Command Palette → **BRAT: Add a beta plugin for testing** →
-   `Harsh-2002/obsidian-forge` → install.
-3. Enable **Settings → Community plugins → Forge**.
+   `Harsh-2002/obsidian-smithy` → install.
+3. Enable **Settings → Community plugins → Smithy**.
 4. The **welcome modal** opens automatically on first run and walks
    you through the 3 sections. If you have an existing Hugo blog
    config in your vault, it offers to prefill the Site section for
@@ -93,14 +93,14 @@ Personal notes outside the configured posts folder are never touched.
 ### Moving to a second device (iPhone, work laptop, etc.)
 
 1. On the device that's already configured, Command Palette →
-   **Forge: Export settings** → file lands in your vault as
-   `forge-config.json`. One click, no passphrase.
+   **Smithy: Export settings** → file lands in your vault as
+   `smithy-config.json`. One click, no passphrase.
 2. Sync the vault to the second device (via Obsidian Sync, iCloud,
    Working Copy + git, Dropbox — anything).
-3. On the second device: install Forge (BRAT), then Command Palette
-   → **Forge: Import settings** → click Import. Done.
+3. On the second device: install Smithy (BRAT), then Command Palette
+   → **Smithy: Import settings** → click Import. Done.
 4. Run **Test all** in Settings to verify the import succeeded.
-5. **Delete `forge-config.json` from the vault once you're done** if
+5. **Delete `smithy-config.json` from the vault once you're done** if
    the vault is synced anywhere you don't fully trust.
 
 The file is plain JSON for simplicity — it contains your settings +
@@ -110,7 +110,7 @@ never upload it to a shared cloud drive.
 
 ### Cross-device sync options
 
-Forge runs the same publish flow on any device — you just need the
+Smithy runs the same publish flow on any device — you just need the
 vault visible there. Free options:
 
 - **Vault = your blog repo.** Clone the repo as your vault. On iOS
@@ -122,7 +122,7 @@ vault visible there. Free options:
 
 ## Configure manually
 
-**Settings → Forge** has three sections, plus a 🟢/🟡/🔴 status badge
+**Settings → Smithy** has three sections, plus a 🟢/🟡/🔴 status badge
 at the top showing whether everything's wired up:
 
 - **Site** — posts folder, site base URL, default draft state.
@@ -136,13 +136,13 @@ at the top showing whether everything's wired up:
   scopes preselected. **Test token** verifies access.
 
 If you ever need the welcome modal back, Command Palette →
-**Forge: Show welcome guide**.
+**Smithy: Show welcome guide**.
 
 ## Develop
 
 ```bash
-git clone https://github.com/Harsh-2002/obsidian-forge
-cd obsidian-forge
+git clone https://github.com/Harsh-2002/obsidian-smithy
+cd obsidian-smithy
 npm install
 npm run dev    # watch + inline sourcemap
 npm run build  # production
@@ -151,7 +151,7 @@ npm run build  # production
 To test live in a sandbox vault:
 
 ```bash
-ln -s "$PWD" ~/<vault>/.obsidian/plugins/forge
+ln -s "$PWD" ~/<vault>/.obsidian/plugins/smithy
 ```
 
 Then in Obsidian: enable under Community plugins.
@@ -165,7 +165,7 @@ a new version ships:
 2. The `release-cleanup.yml` workflow auto-runs on the
    `release: published` event and deletes every prior release + tag.
 
-Net effect: visiting <https://github.com/Harsh-2002/obsidian-forge/releases>
+Net effect: visiting <https://github.com/Harsh-2002/obsidian-smithy/releases>
 always shows the latest, nothing else. BRAT installs the latest tag, and
 nobody asks for older versions in practice, so storing N copies costs
 storage + bandwidth without a payoff. Older versions stay reachable via

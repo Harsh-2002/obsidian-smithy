@@ -4,7 +4,7 @@ import { getSecret } from '../secrets';
 import type { PluginSettings } from '../types';
 
 /**
- * Single source of truth for "is Forge configured?" used by:
+ * Single source of truth for "is Smithy configured?" used by:
  *
  *   - QuickStartCard (settings tab)
  *   - WelcomeModal (first-run trigger)

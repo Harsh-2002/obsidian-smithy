@@ -3,14 +3,14 @@ import { App, Notice, TFile, TFolder } from 'obsidian';
 import type { PluginSettings } from '../types';
 
 /**
- * "Forge: Insert sample post" command — drops a complete, publish-ready
+ * "Smithy: Insert sample post" command — drops a complete, publish-ready
  * demo post into the user's posts folder so they can verify the full
  * pipeline (S3 upload + git commit) before committing real writing.
  *
  * Behaviour:
- *   - Creates `<postsFolder>/forge-hello/index.md` with realistic
+ *   - Creates `<postsFolder>/smithy-hello/index.md` with realistic
  *     frontmatter + body that exercises images, lists, headings.
- *   - On collision (`forge-hello/` already exists), appends `-1`, `-2`,
+ *   - On collision (`smithy-hello/` already exists), appends `-1`, `-2`,
  *     etc. NEVER overwrites.
  *   - Opens the newly-created file in the active leaf so the user
  *     can immediately publish it.
@@ -27,13 +27,13 @@ export async function insertSamplePostCommand(
   const postsRoot = settings.site.postsFolder.replace(/\/+$/, '');
 
   if (!postsRoot) {
-    new Notice('Set the Posts folder in Forge settings first');
+    new Notice('Set the Posts folder in Smithy settings first');
     return;
   }
 
   await ensureFolder(app, postsRoot);
 
-  const slug = await pickAvailableSlug(app, postsRoot, 'forge-hello');
+  const slug = await pickAvailableSlug(app, postsRoot, 'smithy-hello');
   const bundleDir = `${postsRoot}/${slug}`;
   const indexPath = `${bundleDir}/index.md`;
 
@@ -84,28 +84,28 @@ function buildSampleBody(slug: string, now: Date): string {
 
   return [
     '+++',
-    'title = "Hello, Forge"',
+    'title = "Hello, Smithy"',
     `date = ${date}`,
     'draft = true',
-    'description = "A sample post to verify your Forge setup end-to-end."',
-    'tags = ["forge", "hello"]',
+    'description = "A sample post to verify your Smithy setup end-to-end."',
+    'tags = ["smithy", "hello"]',
     'cover = ""',
     '+++',
     '',
-    '# Hello, Forge',
+    '# Hello, Smithy',
     '',
-    "This is a sample post Forge created so you can test the publish flow before writing your first real article. Once you're confident everything works, delete this folder.",
+    "This is a sample post Smithy created so you can test the publish flow before writing your first real article. Once you're confident everything works, delete this folder.",
     '',
     '## What to try',
     '',
-    '- Drop an image into this folder — Forge will upload it to your S3 bucket on publish.',
+    '- Drop an image into this folder — Smithy will upload it to your S3 bucket on publish.',
     '- Reference an image like `![alt](my-image.png)` or `![[my-image.png]]`. Both work.',
-    "- Add `cover = \"my-image.png\"` to the frontmatter above — Forge will upload that too and rewrite the URL.",
+    "- Add `cover = \"my-image.png\"` to the frontmatter above — Smithy will upload that too and rewrite the URL.",
     '- Hit **Mod+Shift+P** (Cmd on Mac, Ctrl elsewhere) to publish.',
     '',
     '## Things to know',
     '',
-    "1. Forge talks to GitHub's REST API, so the same publish hotkey works on desktop AND iPhone.",
+    "1. Smithy talks to GitHub's REST API, so the same publish hotkey works on desktop AND iPhone.",
     '2. Attachments go to S3, NOT into your git repo — keeps the repo light.',
     '3. The status bar at the bottom shows publish state for whichever post is active.',
     '',

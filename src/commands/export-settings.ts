@@ -4,7 +4,7 @@ import { getSecret } from '../secrets';
 import type { PluginSettings } from '../types';
 
 /**
- * "Forge: Export settings" — one click → plain JSON config file in the
+ * "Smithy: Export settings" — one click → plain JSON config file in the
  * vault root.
  *
  * Why plain JSON instead of an encrypted bundle: the user explicitly
@@ -13,7 +13,7 @@ import type { PluginSettings } from '../types';
  * (don't commit it to GitHub, don't share). Acts as a backup AND a
  * cross-device migration tool.
  *
- * Output path: `forge-config.json` at vault root, overwritten each
+ * Output path: `smithy-config.json` at vault root, overwritten each
  * time. The companion "Import settings" command defaults to the same
  * path so the round-trip is friction-free.
  */
@@ -21,7 +21,7 @@ export async function exportSettingsCommand(
   app: App,
   settings: PluginSettings,
 ): Promise<void> {
-  const OUTPUT_PATH = 'forge-config.json';
+  const OUTPUT_PATH = 'smithy-config.json';
 
   try {
     const [accessKey, secretKey, pat] = await Promise.all([
@@ -35,7 +35,7 @@ export async function exportSettingsCommand(
     // Re-importing them on another device would surface stale "published
     // 2h ago" timestamps for posts you haven't even touched there.
     const exportable = {
-      schema: 'forge-export.v1',
+      schema: 'smithy-export.v1',
       exportedAt: new Date().toISOString(),
       pluginVersion: '2026.05.26',
       settings: {
@@ -63,7 +63,7 @@ export async function exportSettingsCommand(
     }
 
     new Notice(
-      `Forge config exported to ${OUTPUT_PATH}\n` +
+      `Smithy config exported to ${OUTPUT_PATH}\n` +
         '⚠ Contains your PAT + S3 keys in plaintext — keep it private. ' +
         'Do NOT commit it to GitHub.',
       12000,

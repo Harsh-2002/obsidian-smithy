@@ -4,14 +4,14 @@ import { setSecret } from '../secrets';
 import type { PluginSettings } from '../types';
 
 /**
- * "Forge: Import settings" — read a `forge-config.json` from the vault
+ * "Smithy: Import settings" — read a `smithy-config.json` from the vault
  * and apply it.
  *
  * Plain JSON only (matches the simpler export flow). If your config
  * is encrypted (older versions), re-export from the source device
  * with the current plugin.
  *
- * Path is editable in the modal but defaults to `forge-config.json`
+ * Path is editable in the modal but defaults to `smithy-config.json`
  * at vault root — same default as the export command.
  */
 export async function importSettingsCommand(
@@ -36,7 +36,7 @@ interface ExportPayload {
 }
 
 class ImportModal extends Modal {
-  private inputPath = 'forge-config.json';
+  private inputPath = 'smithy-config.json';
 
   constructor(
     app: App,
@@ -50,11 +50,11 @@ class ImportModal extends Modal {
     const { contentEl } = this;
 
     contentEl.empty();
-    contentEl.createEl('h2', { text: 'Import Forge settings' });
+    contentEl.createEl('h2', { text: 'Import Smithy settings' });
     contentEl.createEl('p', {
       cls: 'setting-item-description',
       text:
-        'Loads a forge-config.json from your vault and applies it to ' +
+        'Loads a smithy-config.json from your vault and applies it to ' +
         'this device. Includes settings + the 3 secrets (PAT, S3 keys).',
     });
 
@@ -103,16 +103,16 @@ class ImportModal extends Modal {
       payload = JSON.parse(raw) as ExportPayload;
     } catch (e) {
       new Notice(
-        `Could not parse ${this.inputPath} — is it a Forge config JSON?`,
+        `Could not parse ${this.inputPath} — is it a Smithy config JSON?`,
         10000,
       );
-      console.warn('[forge] import parse error', e);
+      console.warn('[smithy] import parse error', e);
 
       return;
     }
 
-    if (!payload.schema || !payload.schema.startsWith('forge-export.')) {
-      new Notice('File is not a Forge settings export');
+    if (!payload.schema || !payload.schema.startsWith('smithy-export.')) {
+      new Notice('File is not a Smithy settings export');
       return;
     }
     if (!payload.settings || !payload.secrets) {

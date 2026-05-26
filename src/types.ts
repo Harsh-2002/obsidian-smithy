@@ -1,5 +1,5 @@
 /**
- * Shared types for forge.
+ * Shared types for smithy.
  */
 
 import type { TFile } from 'obsidian';
@@ -156,7 +156,7 @@ export interface PublishReport {
   /** True if this was a dry-run — no S3 PUTs / no git commits happened. */
   dryRun?: boolean;
   /**
-   * True if Forge POSTed a workflow_dispatch after the commit. Absent if
+   * True if Smithy POSTed a workflow_dispatch after the commit. Absent if
    * the user disabled the dispatch by clearing GitConfig.dispatchWorkflow.
    */
   workflowDispatched?: boolean;

@@ -108,7 +108,7 @@ class SetCoverModal extends Modal {
       );
 
       if (!accessKeyId || !secretAccessKey) {
-        new Notice('S3 credentials not set — open Settings → Forge → Storage');
+        new Notice('S3 credentials not set — open Settings → Smithy → Storage');
         return;
       }
 

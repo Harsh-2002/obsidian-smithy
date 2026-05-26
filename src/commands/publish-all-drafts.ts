@@ -21,7 +21,7 @@ export async function publishAllDraftsCommand(
   const candidates = await collectDraftCandidates(app, settings);
 
   if (candidates.length === 0) {
-    new Notice('Forge: no drafts to publish');
+    new Notice('Smithy: no drafts to publish');
     return;
   }
 
@@ -92,11 +92,11 @@ class BatchPublishModal extends Modal {
       cls: 'setting-item-description',
     });
 
-    const list = contentEl.createDiv({ cls: 'forge-batch-list' });
+    const list = contentEl.createDiv({ cls: 'smithy-batch-list' });
 
     for (const c of this.candidates) {
-      const row = list.createDiv({ cls: 'forge-batch-row' });
-      const meta = row.createDiv({ cls: 'forge-batch-meta' });
+      const row = list.createDiv({ cls: 'smithy-batch-row' });
+      const meta = row.createDiv({ cls: 'smithy-batch-meta' });
 
       meta.createEl('strong', { text: c.file.basename });
       meta.createEl('span', {
@@ -104,11 +104,11 @@ class BatchPublishModal extends Modal {
         cls: 'setting-item-description',
       });
 
-      const status = row.createDiv({ cls: 'forge-batch-status' });
+      const status = row.createDiv({ cls: 'smithy-batch-status' });
 
       status.setText('Pending');
 
-      const buttons = row.createDiv({ cls: 'forge-batch-buttons' });
+      const buttons = row.createDiv({ cls: 'smithy-batch-buttons' });
 
       const pubBtn = buttons.createEl('button', { text: 'Publish' });
 

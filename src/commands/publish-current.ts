@@ -102,10 +102,10 @@ async function runPublish(
       const suffix =
         report.workflowDispatched === true ? ' · build triggered' : '';
 
-      new Notice(`Forge: published ${file.basename} ✓${suffix}`, 4000);
+      new Notice(`Smithy: published ${file.basename} ✓${suffix}`, 4000);
     } else {
       // No-op commit (content unchanged on remote).
-      new Notice(`Forge: ${file.basename} — no changes to publish`, 4000);
+      new Notice(`Smithy: ${file.basename} — no changes to publish`, 4000);
     }
   } catch (e) {
     chip?.setPublishing(null);
@@ -153,6 +153,6 @@ async function runPublish(
 
     modal.fail('unknown', detail);
 
-    console.error('[forge] publish failed:', e);
+    console.error('[smithy] publish failed:', e);
   }
 }

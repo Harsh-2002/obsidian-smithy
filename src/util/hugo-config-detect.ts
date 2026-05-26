@@ -3,7 +3,7 @@ import type { App, TAbstractFile } from 'obsidian';
 
 /**
  * Detect a Hugo site config inside the active vault and pull a small
- * set of useful fields out of it for prefilling Forge settings.
+ * set of useful fields out of it for prefilling Smithy settings.
  *
  * Looks for these files at the vault root, in order, and uses the
  * first match:

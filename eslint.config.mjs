@@ -1,5 +1,5 @@
 /**
- * ESLint flat config for the Forge plugin.
+ * ESLint flat config for the Smithy plugin.
  *
  * Goals:
  *   - Catch real bugs (no-unused-vars, no-undef-init, etc.)

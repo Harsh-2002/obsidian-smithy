@@ -81,7 +81,7 @@ export async function undoLastPublishCommand(
       delete settings.publishHistory[file.path];
       await saveSettings();
 
-      new Notice(`Forge: undo committed — ${result.commitUrl}`, 8000);
+      new Notice(`Smithy: undo committed — ${result.commitUrl}`, 8000);
     } catch (e) {
       new Notice(
         `Undo failed: ${e instanceof Error ? e.message : String(e)}`,

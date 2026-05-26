@@ -6,9 +6,9 @@ import type { PluginSettings } from '../types';
 /**
  * Top-of-settings status pill — 🟢 / 🟡 / 🔴 + one-line message.
  *
- *   - 🟢 Forge is ready                — all 3 sections configured, all secrets set
+ *   - 🟢 Smithy is ready                — all 3 sections configured, all secrets set
  *   - 🟡 Almost there — N to set up   — some sections OK but secret values missing
- *   - 🔴 Forge isn't connected yet     — at least one required section incomplete
+ *   - 🔴 Smithy isn't connected yet     — at least one required section incomplete
  *
  * Clicking the pill scrolls to the first incomplete section. Once
  * everything's green the pill stays as a confirmation chip — it
@@ -22,12 +22,12 @@ export async function renderSettingsStatusBadge(
   scrollToSection: (which: 'site' | 'storage' | 'git') => void,
 ): Promise<void> {
   // Clean any previous badge before re-rendering.
-  const prev = containerEl.querySelector('.forge-status-badge');
+  const prev = containerEl.querySelector('.smithy-status-badge');
 
   if (prev) prev.remove();
 
   const status = await checkConfiguredDeep(app, settings);
-  const badge = containerEl.createDiv({ cls: 'forge-status-badge' });
+  const badge = containerEl.createDiv({ cls: 'smithy-status-badge' });
 
   let icon: string;
   let label: string;
@@ -36,7 +36,7 @@ export async function renderSettingsStatusBadge(
 
   if (status.ready) {
     icon = '🟢';
-    label = 'Forge is ready — publish with Mod+Shift+P';
+    label = 'Smithy is ready — publish with Mod+Shift+P';
     kind = 'green';
   } else if (!status.missing.site && !status.missing.storage && !status.missing.git) {
     // All sections have NAMES set but secret VALUES are missing.
@@ -51,7 +51,7 @@ export async function renderSettingsStatusBadge(
       (status.missing.git ? 1 : 0);
 
     icon = '🔴';
-    label = `Forge isn't connected yet — ${missingCount} section${missingCount === 1 ? '' : 's'} to fill in`;
+    label = `Smithy isn't connected yet — ${missingCount} section${missingCount === 1 ? '' : 's'} to fill in`;
     kind = 'red';
     jumpTo = status.missing.site
       ? 'site'
@@ -60,7 +60,7 @@ export async function renderSettingsStatusBadge(
         : 'git';
   }
 
-  badge.addClass(`forge-status-badge-${kind}`);
+  badge.addClass(`smithy-status-badge-${kind}`);
   badge.style.cursor = jumpTo ? 'pointer' : 'default';
   badge.createSpan({ text: `${icon}  ${label}` });
 

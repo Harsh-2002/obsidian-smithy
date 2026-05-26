@@ -29,7 +29,7 @@ export function renderQuickStartCard(
   scrollToSection: (which: 'site' | 'storage' | 'git') => void,
 ): void {
   // Always clean out any previous card before checking.
-  const old = containerEl.querySelector('.forge-quick-start');
+  const old = containerEl.querySelector('.smithy-quick-start');
 
   if (old) old.remove();
 
@@ -37,7 +37,7 @@ export function renderQuickStartCard(
 
   if (status.ready) return;
 
-  const card = containerEl.createDiv({ cls: 'forge-quick-start' });
+  const card = containerEl.createDiv({ cls: 'smithy-quick-start' });
 
   card.createEl('h3', { text: 'Get started in 3 steps' });
   card.createEl('p', {

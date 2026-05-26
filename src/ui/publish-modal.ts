@@ -61,25 +61,25 @@ export class PublishModal extends Modal {
     contentEl.createEl('h2', { text: `Publishing: ${this.postName}` });
 
     this.phaseEl = contentEl.createEl('p', {
-      cls: 'forge-phase',
+      cls: 'smithy-phase',
       text: this.currentPhase
         ? `${phaseLabel(this.currentPhase)} (${currentStep(this.currentPhase)}/${PHASE_ORDER.length})`
         : 'starting…',
     });
 
     this.uploadEl = contentEl.createEl('p', {
-      cls: 'forge-upload',
+      cls: 'smithy-upload',
       text: this.uploadStatus,
     });
 
     this.warningsEl = contentEl.createEl('div', {
-      cls: 'forge-warnings',
+      cls: 'smithy-warnings',
     });
     // Replay any warnings that arrived before onOpen.
     this.renderWarnings();
 
     this.finishEl = contentEl.createEl('div', {
-      cls: 'forge-finish',
+      cls: 'smithy-finish',
     });
 
     new Setting(contentEl).addButton((b) => {

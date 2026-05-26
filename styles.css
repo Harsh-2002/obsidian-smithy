@@ -1,9 +1,9 @@
-/* forge styles */
+/* smithy styles */
 
 /* Status-bar chip. Sits in Obsidian's bottom-right status bar; styled to
  * match its siblings (word-count, sync indicator, etc.) by inheriting
  * theme variables. */
-.forge-status-bar {
+.smithy-status-bar {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -11,44 +11,44 @@
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
 }
-.forge-status-bar:hover {
+.smithy-status-bar:hover {
   color: var(--text-normal);
 }
-.forge-status-bar span {
+.smithy-status-bar span {
   white-space: nowrap;
 }
 
 /* Quick-start card in the settings tab — shown only when configuration
  * is incomplete. Themed to stand out as actionable without screaming. */
-.forge-quick-start {
+.smithy-quick-start {
   margin: 12px 0 24px;
   padding: 12px 16px;
   border: 1px solid var(--interactive-accent);
   border-radius: 6px;
   background: var(--background-secondary);
 }
-.forge-quick-start h3 {
+.smithy-quick-start h3 {
   margin: 0 0 6px;
   font-size: 1rem;
 }
-.forge-quick-start ul {
+.smithy-quick-start ul {
   margin: 8px 0;
   padding-left: 1.4em;
 }
-.forge-quick-start li {
+.smithy-quick-start li {
   margin: 4px 0;
 }
-.forge-quick-start a {
+.smithy-quick-start a {
   color: var(--text-accent);
   cursor: pointer;
 }
 
-.forge-section {
+.smithy-section {
   scroll-margin-top: 16px;
 }
 
 /* Settings status badge — 🟢/🟡/🔴 pill at top of settings tab. */
-.forge-status-badge {
+.smithy-status-badge {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -59,20 +59,20 @@
   border: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
 }
-.forge-status-badge-green {
+.smithy-status-badge-green {
   border-color: var(--color-green, #4caf50);
 }
-.forge-status-badge-yellow {
+.smithy-status-badge-yellow {
   border-color: var(--color-yellow, #ffb300);
 }
-.forge-status-badge-red {
+.smithy-status-badge-red {
   border-color: var(--color-red, #e53935);
 }
 
 /* Inline note under the Storage provider dropdown — sits within the
  * card with proper line-height + bounded width so long preset notes
  * don't bleed past the section edge. */
-.forge-preset-note {
+.smithy-preset-note {
   margin: 4px 0 14px;
   padding: 6px 10px;
   border-left: 2px solid var(--background-modifier-border);
@@ -82,51 +82,51 @@
   word-break: normal;
 }
 
-/* Widen the text inputs inside Forge sections — Obsidian's default
+/* Widen the text inputs inside Smithy sections — Obsidian's default
  * setting-item-control width is comfortable for short values like
  * "true / false" but cramped for URLs, endpoints, and path templates
- * that Forge users actually type. */
-.forge-section .setting-item-control input[type='text'],
-.forge-section .setting-item-control input[type='url'] {
+ * that Smithy users actually type. */
+.smithy-section .setting-item-control input[type='text'],
+.smithy-section .setting-item-control input[type='url'] {
   min-width: 280px;
   width: 100%;
   max-width: 460px;
 }
 @media (min-width: 900px) {
-  .forge-section .setting-item-control input[type='text'],
-  .forge-section .setting-item-control input[type='url'] {
+  .smithy-section .setting-item-control input[type='text'],
+  .smithy-section .setting-item-control input[type='url'] {
     min-width: 360px;
     max-width: 560px;
   }
 }
-.forge-section .setting-item-control {
+.smithy-section .setting-item-control {
   flex-grow: 1;
   justify-content: flex-end;
 }
 
 /* Welcome modal — fresh-install onboarding surface. */
-.forge-welcome-modal {
+.smithy-welcome-modal {
   max-width: 560px;
 }
-.forge-welcome-card {
+.smithy-welcome-card {
   margin: 14px 0;
   padding: 14px 16px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
   background: var(--background-secondary);
 }
-.forge-welcome-card h3 {
+.smithy-welcome-card h3 {
   margin: 0 0 6px;
   font-size: 1.05rem;
 }
-.forge-welcome-card p {
+.smithy-welcome-card p {
   margin: 0 0 10px;
   line-height: 1.45;
 }
-.forge-welcome-card button.mod-cta {
+.smithy-welcome-card button.mod-cta {
   margin-top: 4px;
 }
-.forge-welcome-mobile-tip {
+.smithy-welcome-mobile-tip {
   margin-top: 16px;
   padding: 10px 12px;
   border-radius: 4px;
@@ -134,7 +134,7 @@
 }
 
 /* Batch publish modal: one row per draft. */
-.forge-batch-list {
+.smithy-batch-list {
   margin: 12px 0;
   display: flex;
   flex-direction: column;
@@ -142,7 +142,7 @@
   max-height: 60vh;
   overflow-y: auto;
 }
-.forge-batch-row {
+.smithy-batch-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
@@ -151,17 +151,17 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
 }
-.forge-batch-meta {
+.smithy-batch-meta {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.forge-batch-status {
+.smithy-batch-status {
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
   white-space: nowrap;
 }
-.forge-batch-buttons {
+.smithy-batch-buttons {
   display: flex;
   gap: 6px;
 }
@@ -173,21 +173,21 @@
     padding: 12px !important;
   }
 
-  .forge-batch-row {
+  .smithy-batch-row {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
   }
-  .forge-batch-buttons button {
+  .smithy-batch-buttons button {
     width: 100%;
     min-height: 36px;
   }
-  .forge-quick-start {
+  .smithy-quick-start {
     padding: 8px 12px;
   }
-  .forge-welcome-modal {
+  .smithy-welcome-modal {
     max-width: unset;
   }
-  .forge-welcome-card button.mod-cta {
+  .smithy-welcome-card button.mod-cta {
     width: 100%;
     min-height: 40px;
   }
