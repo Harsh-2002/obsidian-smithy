@@ -2,6 +2,10 @@ import { Editor, MarkdownView, Notice, Plugin } from 'obsidian';
 
 import { newPostCommand } from './commands/new-post';
 import { openShortcodePicker } from './commands/insert-shortcode';
+import {
+  canOpenPublished,
+  openPublishedCommand,
+} from './commands/open-published';
 import { publishCurrentCommand } from './commands/publish-current';
 import { uploadSingleAttachment } from './commands/upload-single';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
@@ -96,6 +100,18 @@ export default class Forge extends Plugin {
           return;
         }
         uploadSingleAttachment(this.app, this.settings);
+      },
+    });
+
+    /* ===== Open published version ===== */
+    this.addCommand({
+      id: 'open-published-version',
+      name: 'Open published version',
+      checkCallback: (checking) => {
+        if (!this.ready) return false;
+        if (!canOpenPublished(this.app, this.settings)) return false;
+        if (!checking) openPublishedCommand(this.app, this.settings);
+        return true;
       },
     });
 

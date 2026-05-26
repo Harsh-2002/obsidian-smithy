@@ -8,6 +8,7 @@ import { renderKey } from '../storage/path-template';
 import { testAccess } from '../git/github-rest';
 import type { PluginSettings, ProviderPresetId } from '../types';
 
+import { renderQuickStartCard } from './quick-start-card';
 import { SecretModal } from './secret-modal';
 
 /**
@@ -39,6 +40,9 @@ export class ForgeSettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
+  /** Section anchor refs so the quick-start card can scroll to them. */
+  private sectionEls: Partial<Record<'site' | 'storage' | 'git', HTMLElement>> = {};
+
   display(): void {
     const { containerEl } = this;
 
@@ -52,14 +56,21 @@ export class ForgeSettingTab extends PluginSettingTab {
       cls: 'setting-item-description',
     });
 
-    this.renderSiteSection(containerEl);
-    this.renderStorageSection(containerEl);
-    this.renderGitSection(containerEl);
+    // Quick-start card — only renders when sections are missing core fields.
+    renderQuickStartCard(containerEl, this.host.settings, (which) => {
+      this.sectionEls[which]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    this.sectionEls.site = this.renderSiteSection(containerEl);
+    this.sectionEls.storage = this.renderStorageSection(containerEl);
+    this.sectionEls.git = this.renderGitSection(containerEl);
   }
 
   /* ===== Site ===== */
 
-  private renderSiteSection(c: HTMLElement) {
+  private renderSiteSection(parent: HTMLElement): HTMLElement {
+    const c = parent.createDiv({ cls: 'forge-section forge-section-site' });
+
     new Setting(c).setName('Site').setHeading();
 
     new Setting(c)
@@ -106,11 +117,15 @@ export class ForgeSettingTab extends PluginSettingTab {
             await this.host.persist();
           }),
       );
+
+    return c;
   }
 
   /* ===== Storage ===== */
 
-  private renderStorageSection(c: HTMLElement) {
+  private renderStorageSection(parent: HTMLElement): HTMLElement {
+    const c = parent.createDiv({ cls: 'forge-section forge-section-storage' });
+
     new Setting(c).setName('Storage').setHeading();
 
     new Setting(c)
@@ -285,13 +300,15 @@ export class ForgeSettingTab extends PluginSettingTab {
       .setName('Test connection')
       .setDesc(
         'Uploads a tiny 4-byte test object to verify endpoint + credentials + ' +
-          'path template all work end-to-end.',
+          'path template all work end-to-end. Cleans up after itself.',
       )
       .addButton((b) =>
         b.setButtonText('Test upload').onClick(async () => {
           await this.runTestUpload();
         }),
       );
+
+    return c;
   }
 
   private async runTestUpload(): Promise<void> {
@@ -349,7 +366,9 @@ export class ForgeSettingTab extends PluginSettingTab {
 
   /* ===== Git ===== */
 
-  private renderGitSection(c: HTMLElement) {
+  private renderGitSection(parent: HTMLElement): HTMLElement {
+    const c = parent.createDiv({ cls: 'forge-section forge-section-git' });
+
     new Setting(c).setName('Git').setHeading();
 
     new Setting(c)
@@ -458,7 +477,20 @@ export class ForgeSettingTab extends PluginSettingTab {
         b.setButtonText('Test token').onClick(async () => {
           await this.runTestToken();
         }),
+      )
+      .addButton((b) =>
+        b
+          .setButtonText('Test all')
+          .setCta()
+          .setTooltip(
+            'Run both Test upload and Test token — one click, one notice.',
+          )
+          .onClick(async () => {
+            await this.runTestAll();
+          }),
       );
+
+    return c;
   }
 
   private async runTestToken(): Promise<void> {
@@ -485,5 +517,76 @@ export class ForgeSettingTab extends PluginSettingTab {
         10000,
       );
     }
+  }
+
+  /**
+   * Run both Test upload + Test token sequentially and surface ONE notice
+   * with annotated outcomes. Saves users two clicks plus the cognitive
+   * load of running two checks in sequence.
+   */
+  private async runTestAll(): Promise<void> {
+    const parts: string[] = [];
+
+    // Storage
+    try {
+      const accessKeyId = await getSecret(
+        this.app,
+        this.host.settings.storage.accessKeyIdSecret,
+      );
+      const secretAccessKey = await getSecret(
+        this.app,
+        this.host.settings.storage.secretAccessKeySecret,
+      );
+
+      if (!accessKeyId || !secretAccessKey) {
+        parts.push('Storage ✗ (secrets unset)');
+      } else {
+        const client = new S3Client(this.host.settings.storage, {
+          accessKeyId,
+          secretAccessKey,
+        });
+        const key = await renderKey(this.host.settings.storage.pathTemplate, {
+          date: new Date(),
+          slug: '_forge-test',
+          filename: 'test.txt',
+          bytes: new TextEncoder().encode('test').buffer,
+        });
+
+        await client.putObject(
+          key,
+          new TextEncoder().encode('test').buffer,
+          'text/plain',
+        );
+        await client.deleteObject(key).catch(() => false);
+        parts.push('Storage ✓');
+      }
+    } catch (e) {
+      parts.push(
+        `Storage ✗ (${e instanceof Error ? e.message : String(e)})`,
+      );
+    }
+
+    // Git
+    try {
+      const token = await getSecret(this.app, this.host.settings.git.patSecret);
+
+      if (!token) {
+        parts.push('GitHub ✗ (PAT unset)');
+      } else {
+        const result = await testAccess(this.host.settings.git, token);
+
+        if (result.ok) {
+          parts.push('GitHub ✓');
+        } else {
+          parts.push(`GitHub ✗ (HTTP ${result.status})`);
+        }
+      }
+    } catch (e) {
+      parts.push(
+        `GitHub ✗ (${e instanceof Error ? e.message : String(e)})`,
+      );
+    }
+
+    new Notice(`Forge test — ${parts.join(' · ')}`, 10000);
   }
 }
