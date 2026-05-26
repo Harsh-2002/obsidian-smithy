@@ -21,11 +21,12 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        # --omit=optional skips the @esbuild/* platform-specific binaries
-        # that don't match the current OS/CPU — npm ci is strict about
-        # them otherwise, and the host (Linux x64) doesn't need the
-        # netbsd / windows / etc. variants to run lint + test + build.
-        run: npm ci --omit=optional
+        # Use npm install (not npm ci) — matches the official obsidian-sample-plugin
+        # CI pattern. esbuild's platform-specific @esbuild/* packages get
+        # tagged extraneous (not optional) in modern lockfiles which makes
+        # npm ci fail with EBADPLATFORM on cross-platform variants.
+        # npm install is forgiving about them.
+        run: npm install --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
