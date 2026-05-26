@@ -320,27 +320,7 @@ export default class Smithy extends Plugin {
       openSettings: () => {
         // @ts-expect-error — Obsidian's setting object isn't in public types
         this.app.setting.open();
-        // @ts-expect-error — same
-        this.app.setting.openTabById('smithy');
-      },
-      jumpTo: (which) => {
-        // The settings tab handles scroll-to-section via a class hook.
-        // We defer to next tick so the tab DOM exists when we query.
-        setTimeout(() => {
-          const el = document.querySelector(`.smithy-section-${which}`);
-
-          if (el instanceof HTMLElement) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 100);
-      },
-      runTestAll: async () => {
-        // Best-effort: open settings so the user sees the Notice fire
-        // there alongside the existing Test all button. Not strictly
-        // required — the Notice toast fires globally.
-        // @ts-expect-error — app.setting not in Obsidian's public types
-        this.app.setting.open();
-        // @ts-expect-error — app.setting not in Obsidian's public types
+        // @ts-expect-error — Obsidian's setting object isn't in public types
         this.app.setting.openTabById('smithy');
       },
       markDismissed: async () => {

@@ -3,12 +3,16 @@ import type { PluginSettings } from '../types';
 
 /**
  * Quick-start card — renders at the top of the settings tab when the
- * plugin isn't yet fully configured. Each unmet section shows as a
- * bullet; clicking the bullet scrolls to that section. Once all three
- * sections have their core fields set, the card removes itself.
+ * plugin isn't yet fully configured. Lists the missing sections as
+ * plain numbered items. Once everything's configured, the card
+ * removes itself.
  *
- * Goal: a first-time user opens the settings panel and immediately
- * understands the 3 things to fill in instead of staring at 15 fields.
+ * Design note (v0.5 polish): we tried rendering each item as a
+ * clickable <a> that scrolled to the section. Result: redundant
+ * "1.", "2.", "3." prefixes plus default <ul> bullets plus link
+ * underlines — visually noisy. Now it's a plain <ol> with no link
+ * styling; the section <h2> headings below are scroll targets if
+ * the user wants to jump.
  *
  * The "is configured?" check lives in `src/util/check-configured.ts`
  * so the welcome modal + status badge + quick-start card all share
@@ -18,17 +22,13 @@ import type { PluginSettings } from '../types';
 // Re-export for backward compat with any existing imports.
 export { checkConfigured as checkQuickStart } from '../util/check-configured';
 
-/**
- * Render the card into the given container element. Caller is expected
- * to call `renderQuickStartCard` whenever settings change so the card
- * disappears as the user fills in fields.
- */
 export function renderQuickStartCard(
   containerEl: HTMLElement,
   settings: PluginSettings,
-  scrollToSection: (which: 'site' | 'storage' | 'git') => void,
+  // Kept in the signature for API compatibility with callers, even
+  // though the card no longer needs to jump — settings are right below.
+  _scrollToSection?: (which: 'site' | 'storage' | 'git') => void,
 ): void {
-  // Always clean out any previous card before checking.
   const old = containerEl.querySelector('.smithy-quick-start');
 
   if (old) old.remove();
@@ -39,59 +39,34 @@ export function renderQuickStartCard(
 
   const card = containerEl.createDiv({ cls: 'smithy-quick-start' });
 
-  card.createEl('h3', { text: 'Get started in 3 steps' });
+  card.createEl('h3', { text: 'Get started' });
   card.createEl('p', {
-    text:
-      'Fill in the unfinished sections below to start publishing. ' +
-      'Click each item to jump there.',
+    text: 'Fill in these sections below to start publishing:',
     cls: 'setting-item-description',
   });
 
-  const ul = card.createEl('ul');
+  const ol = card.createEl('ol');
 
   if (status.missing.site) {
-    const li = ul.createEl('li');
-    const link = li.createEl('a', {
-      text: '1. Site — set your posts folder + live site URL',
-      attr: { href: '#' },
-    });
-
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      scrollToSection('site');
+    ol.createEl('li', {
+      text: 'Site — your posts folder + the live site URL',
     });
   }
-
   if (status.missing.storage) {
-    const li = ul.createEl('li');
-    const link = li.createEl('a', {
-      text: '2. Storage — pick a provider preset, fill bucket / endpoint / CDN URL, set the S3 keys',
-      attr: { href: '#' },
-    });
-
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      scrollToSection('storage');
+    ol.createEl('li', {
+      text: 'Storage — provider preset + bucket + endpoint + S3 keys',
     });
   }
-
   if (status.missing.git) {
-    const li = ul.createEl('li');
-    const link = li.createEl('a', {
-      text: '3. Git — fill repo owner / name / branch, set your GitHub PAT',
-      attr: { href: '#' },
-    });
-
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      scrollToSection('git');
+    ol.createEl('li', {
+      text: 'Git — repo owner / name / branch + GitHub PAT',
     });
   }
 
   card.createEl('p', {
     text:
-      'After all three sections are filled, use the Test all button to ' +
-      'verify your config before publishing your first post.',
+      'When all three are filled, scroll to "Verify" and click Test all ' +
+      'to confirm everything works before your first publish.',
     cls: 'setting-item-description',
   });
 }

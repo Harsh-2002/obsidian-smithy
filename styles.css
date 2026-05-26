@@ -31,16 +31,12 @@
   margin: 0 0 6px;
   font-size: 1rem;
 }
-.smithy-quick-start ul {
+.smithy-quick-start ol {
   margin: 8px 0;
-  padding-left: 1.4em;
+  padding-left: 1.6em;
 }
 .smithy-quick-start li {
   margin: 4px 0;
-}
-.smithy-quick-start a {
-  color: var(--text-accent);
-  cursor: pointer;
 }
 
 .smithy-section {
@@ -104,33 +100,30 @@
   justify-content: flex-end;
 }
 
-/* Welcome modal — fresh-install onboarding surface. */
+/* Welcome modal — info-only signpost on fresh install. */
 .smithy-welcome-modal {
-  max-width: 560px;
+  max-width: 520px;
 }
-.smithy-welcome-card {
-  margin: 14px 0;
-  padding: 14px 16px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  background: var(--background-secondary);
+.smithy-welcome-list {
+  margin: 8px 0 14px;
+  padding-left: 1.4em;
+  line-height: 1.55;
 }
-.smithy-welcome-card h3 {
-  margin: 0 0 6px;
-  font-size: 1.05rem;
+.smithy-welcome-list li {
+  margin: 4px 0;
 }
-.smithy-welcome-card p {
-  margin: 0 0 10px;
-  line-height: 1.45;
-}
-.smithy-welcome-card button.mod-cta {
-  margin-top: 4px;
+.smithy-welcome-detected {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--interactive-accent);
+  background: var(--background-primary-alt);
 }
 .smithy-welcome-mobile-tip {
-  margin-top: 16px;
-  padding: 10px 12px;
+  margin-top: 14px;
+  padding: 8px 12px;
   border-radius: 4px;
   background: var(--background-primary-alt);
+  font-size: var(--font-ui-smaller);
 }
 
 /* Batch publish modal: one row per draft. */

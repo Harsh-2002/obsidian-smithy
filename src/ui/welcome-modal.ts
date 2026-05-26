@@ -4,22 +4,23 @@ import { detectHugoConfig, type HugoDetectResult } from '../util/hugo-config-det
 import type { PluginSettings } from '../types';
 
 /**
- * Welcome modal — fires on truly fresh installs (no PAT secret, no
- * site URL, no repo owner; never on upgrade) and again whenever the
- * user re-opens it via "Smithy: Show welcome guide" command.
+ * Welcome modal — info-only signpost shown once on fresh install.
  *
- * Design: ONE scrollable surface with three numbered cards + a "Test
- * everything" button + "Skip" link. No multi-screen state machine —
- * users can scroll, jump, dismiss freely.
+ * Design notes (this is the v0.5 simplification — the previous version
+ * had three cards each with its own CTA, but any click closed the modal
+ * which was confusing):
  *
- * The modal does NOT save settings — it just guides users to the right
- * fields in the settings tab via "Open settings → Site" / "Open
- * settings → Storage" / "Open settings → Git" buttons. The actual data
- * entry happens in the full settings form, which already exists.
+ *   - ONE primary CTA: "Open Settings". Skip link next to it.
+ *   - Three short bullets summarising what to configure. No per-bullet
+ *     buttons.
+ *   - If a Hugo config is detected at vault root, auto-fill the Site
+ *     URL and announce it as a one-liner. No "use this?" button.
+ *   - Mobile-platform hint shown as a small footer line.
  *
- * The intent: turn a fresh install from "stare at empty form" into
- * "here are the 3 things to set, in this order, with a one-line
- * explanation of each".
+ * Modal can't be reopened from itself by design — once it closes, the
+ * user is in the settings tab and the status badge at the top tells
+ * them what's missing. Re-opening is via "Smithy: Show welcome guide"
+ * command from the palette.
  */
 export class WelcomeModal extends Modal {
   constructor(
@@ -27,8 +28,6 @@ export class WelcomeModal extends Modal {
     private readonly settings: PluginSettings,
     private readonly callbacks: {
       openSettings: () => void;
-      jumpTo: (which: 'site' | 'storage' | 'git') => void;
-      runTestAll: () => Promise<void>;
       markDismissed: () => Promise<void>;
       persistSettings: () => Promise<void>;
     },
@@ -42,91 +41,54 @@ export class WelcomeModal extends Modal {
     contentEl.empty();
     contentEl.addClass('smithy-welcome-modal');
 
-    contentEl.createEl('h2', { text: 'Welcome to Smithy 👋' });
+    contentEl.createEl('h2', { text: 'Welcome to Smithy' });
     contentEl.createEl('p', {
       text:
-        'Smithy publishes posts from your Obsidian vault to a static-site repo on GitHub. ' +
-        "Here's the 3-minute setup. You can come back to this anytime via Settings → Smithy.",
+        'Smithy publishes posts from this vault to your static-site repo on ' +
+        'GitHub. Three sections in Settings to fill in:',
       cls: 'setting-item-description',
     });
 
-    // Async auto-detect — append a "Detected your Hugo config" hint
-    // if we find one. Non-blocking; the cards render immediately, the
-    // hint appears once detection finishes.
-    void this.maybeRenderDetectedHint(contentEl);
+    const list = contentEl.createEl('ul', { cls: 'smithy-welcome-list' });
 
-    /* ---- Card 1: Site ---- */
-    this.renderCard(contentEl, {
-      step: 1,
-      title: 'Where do your posts live?',
-      body:
-        'Your blog folder inside the vault (e.g. content/posts) and the live ' +
-        "site URL where they'll be published (e.g. https://blog.example.com).",
-      ctaLabel: 'Open Site settings →',
-      onCta: () => {
-        this.callbacks.openSettings();
-        this.callbacks.jumpTo('site');
-        this.close();
-      },
+    list.createEl('li', {
+      text: 'Site — your posts folder + the live site URL',
+    });
+    list.createEl('li', {
+      text: 'Storage — S3-compatible bucket for attachment uploads',
+    });
+    list.createEl('li', {
+      text: "Git — repo Smithy commits to + your GitHub PAT",
     });
 
-    /* ---- Card 2: Storage ---- */
-    this.renderCard(contentEl, {
-      step: 2,
-      title: 'Where do attachments go?',
-      body:
-        'Images and other assets upload to S3-compatible storage (Cloudflare R2, ' +
-        'AWS S3, MinIO, etc.) so the git repo stays small. Pick a provider ' +
-        'preset; Smithy prefills the right endpoint + region for you.',
-      ctaLabel: 'Open Storage settings →',
-      onCta: () => {
-        this.callbacks.openSettings();
-        this.callbacks.jumpTo('storage');
-        this.close();
-      },
-    });
+    // Detection one-liner (silent auto-apply). No interactive UI — the
+    // user just sees that the field was prefilled and can adjust in
+    // Settings if they want.
+    void this.maybeApplyDetectedConfig(contentEl);
 
-    /* ---- Card 3: Git ---- */
-    this.renderCard(contentEl, {
-      step: 3,
-      title: 'Which repo?',
-      body:
-        'Your static-site repo on GitHub (e.g. you/blog) plus a Personal Access ' +
-        "Token with `Contents: write` on that repo. Smithy uses GitHub's web API " +
-        'instead of `git push` so it works the same on desktop and iPhone.',
-      ctaLabel: 'Open Git settings →',
-      onCta: () => {
-        this.callbacks.openSettings();
-        this.callbacks.jumpTo('git');
-        this.close();
-      },
-    });
-
-    /* ---- Final: Test + Skip ---- */
     new Setting(contentEl)
-      .setName('Once all three sections are filled in')
-      .setDesc('Use Test all to verify before your first publish.')
       .addButton((b) =>
         b
-          .setButtonText('Test all')
+          .setButtonText('Open Settings')
           .setCta()
           .onClick(async () => {
-            await this.callbacks.runTestAll();
+            await this.callbacks.markDismissed();
+            this.callbacks.openSettings();
+            this.close();
           }),
       )
       .addButton((b) =>
-        b.setButtonText("Skip — I'll do it later").onClick(async () => {
+        b.setButtonText('Skip for now').onClick(async () => {
           await this.callbacks.markDismissed();
           this.close();
         }),
       );
 
-    /* ---- Mobile tip ---- */
     if (Platform.isMobile) {
       contentEl.createEl('p', {
         text:
-          '📱 On iPhone/iPad: tap and hold an image in the editor to embed it, ' +
-          'then publish — Smithy uploads to S3 and rewrites the URL automatically.',
+          'On iPhone / iPad: same flow. The publish command lives in the ' +
+          'Command palette; everything else is in Settings → Smithy.',
         cls: 'setting-item-description smithy-welcome-mobile-tip',
       });
     }
@@ -136,82 +98,47 @@ export class WelcomeModal extends Modal {
     this.contentEl.empty();
   }
 
-  private renderCard(
-    parent: HTMLElement,
-    opts: {
-      step: number;
-      title: string;
-      body: string;
-      ctaLabel: string;
-      onCta: () => void;
-    },
-  ): void {
-    const card = parent.createDiv({ cls: 'smithy-welcome-card' });
-
-    card.createEl('h3', { text: `${opts.step}. ${opts.title}` });
-    card.createEl('p', { text: opts.body, cls: 'setting-item-description' });
-
-    const btnEl = card.createEl('button', {
-      text: opts.ctaLabel,
-      cls: 'mod-cta',
-    });
-
-    btnEl.addEventListener('click', opts.onCta);
-  }
-
   /**
-   * Scan the vault for a Hugo config file. If found and yields a
-   * baseURL (or a posts folder), surface it as an actionable hint
-   * with a button to apply the suggestion to the user's settings.
+   * If a Hugo config is detected and the Site fields are still empty,
+   * silently fill them in and surface a one-line acknowledgement.
    *
-   * Never auto-applies — we explicitly require a click so the user
-   * sees what's being filled in.
+   * No interactive UI — the welcome modal is info-only. Users who want
+   * to override can do so directly in Settings; the status badge there
+   * will reflect whatever's now configured.
    */
-  private async maybeRenderDetectedHint(parent: HTMLElement): Promise<void> {
+  private async maybeApplyDetectedConfig(parent: HTMLElement): Promise<void> {
     let result: HugoDetectResult | null;
 
     try {
       result = await detectHugoConfig(this.app);
     } catch {
-      return; // detection failure is never fatal
+      return;
     }
 
     if (!result) return;
 
-    // Nothing useful to suggest? Skip silently.
-    if (!result.baseUrl && !result.postsFolderExists) return;
+    const applied: string[] = [];
 
-    const hint = parent.createDiv({ cls: 'smithy-welcome-detected' });
-
-    hint.createEl('strong', { text: 'Detected your blog setup' });
-    hint.createEl('p', {
-      text: `Found ${result.configPath} in your vault. We can prefill the Site section for you.`,
-      cls: 'setting-item-description',
-    });
-
-    const items = hint.createEl('ul');
-
-    if (result.baseUrl) {
-      items.createEl('li', { text: `Site URL: ${result.baseUrl}` });
+    if (result.baseUrl && !this.settings.site.siteBaseUrl) {
+      this.settings.site.siteBaseUrl = result.baseUrl;
+      applied.push(`Site URL → ${result.baseUrl}`);
     }
-    if (result.postsFolderExists) {
-      items.createEl('li', { text: 'Posts folder: content/posts' });
+    if (result.postsFolderExists && !this.settings.site.postsFolder) {
+      this.settings.site.postsFolder = 'content/posts';
+      applied.push('Posts folder → content/posts');
     }
 
-    const applyBtn = hint.createEl('button', {
-      text: 'Use these',
-      cls: 'mod-cta',
+    if (applied.length === 0) return;
+
+    await this.callbacks.persistSettings();
+
+    const note = parent.createEl('p', {
+      cls: 'setting-item-description smithy-welcome-detected',
     });
 
-    applyBtn.addEventListener('click', async () => {
-      if (result.baseUrl) this.settings.site.siteBaseUrl = result.baseUrl;
-      if (result.postsFolderExists) this.settings.site.postsFolder = 'content/posts';
-      await this.callbacks.persistSettings();
-      hint.empty();
-      hint.createEl('p', {
-        text: '✓ Applied to Site settings.',
-        cls: 'setting-item-description',
-      });
+    note.createEl('strong', {
+      text: `Detected ${result.configPath}  `,
     });
+    note.createSpan({ text: '— filled in: ' + applied.join(', ') });
   }
 }
