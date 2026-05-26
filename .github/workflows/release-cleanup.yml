@@ -1,0 +1,56 @@
+name: Release cleanup
+
+# One-active-release policy: when a new release is published, delete all
+# previous releases AND tags. The rationale lives in README → "Release
+# policy" — TL;DR: BRAT users always want the latest, storing N versions
+# inflates the repo + bandwidth costs without buying anything useful.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete prior releases + tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "Keeping release: $CURRENT_TAG"
+          echo "Repo: $REPO"
+
+          # List every release in the repo, drop the one we just published.
+          prior_tags=$(gh release list --repo "$REPO" --limit 100 --json tagName --jq '.[].tagName' | grep -vx "$CURRENT_TAG" || true)
+
+          if [ -z "$prior_tags" ]; then
+            echo "No prior releases — nothing to clean up."
+            exit 0
+          fi
+
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            echo "Deleting release: $tag"
+            gh release delete "$tag" --repo "$REPO" --yes --cleanup-tag || \
+              echo "  (already gone or not deletable — skipping)"
+          done <<< "$prior_tags"
+
+          # Belt-and-suspenders: any tags left without an attached release
+          # (--cleanup-tag should handle this, but verify).
+          remaining_tags=$(gh api "/repos/$REPO/tags?per_page=100" --jq '.[].name' | grep -vx "$CURRENT_TAG" || true)
+          if [ -n "$remaining_tags" ]; then
+            while IFS= read -r tag; do
+              [ -z "$tag" ] && continue
+              echo "Deleting orphan tag: $tag"
+              gh api -X DELETE "/repos/$REPO/git/refs/tags/$tag" || \
+                echo "  (orphan tag delete failed — skipping)"
+            done <<< "$remaining_tags"
+          fi
+
+          echo "Cleanup complete. Only $CURRENT_TAG remains."
