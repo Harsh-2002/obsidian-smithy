@@ -48,7 +48,7 @@ export default class Forge extends Plugin {
         }
 
         if (!checking) {
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+           
           publishCurrentCommand(this.app, this.settings);
         }
 
@@ -78,7 +78,7 @@ export default class Forge extends Plugin {
           new Notice('Plugin still initializing — try again in a second');
           return;
         }
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+         
         newPostCommand(this.app, this.settings);
       },
     });
@@ -92,13 +92,13 @@ export default class Forge extends Plugin {
           new Notice('Plugin still initializing — try again in a second');
           return;
         }
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+         
         uploadSingleAttachment(this.app, this.settings);
       },
     });
 
     this.app.workspace.onLayoutReady(() => {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+       
       this.deferredInit();
     });
   }
@@ -112,7 +112,7 @@ export default class Forge extends Plugin {
     this.settings = await loadSettings(this);
 
     if (!hasSecretStorageRuntime(this.app)) {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         '[forge] app.secretStorage not available; ' +
           'using vault-scoped localStorage as a fallback. ' +

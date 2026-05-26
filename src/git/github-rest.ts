@@ -143,7 +143,9 @@ export async function commitFile(
   });
 
   if (res.status === 422) {
-    const body = await res.text().catch(() => '');
+    // Drain the body so we don't leak a Response — but its content adds
+    // nothing to the typed error we surface, so we discard it.
+    await res.text().catch(() => '');
 
     throw new GitHubConflictError(
       `branch ${cfg.branch} has newer commits than our base SHA — pull then retry`,

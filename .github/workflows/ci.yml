@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: lint + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build (verify bundle compiles)
+        run: npm run build
+
+      - name: Check bundle size
+        run: |
+          size=$(stat -c%s main.js)
+          echo "main.js: ${size} bytes"
+          # Keep bundle under 80 KB; v0.1 baseline was ~48 KB.
+          if [ "$size" -gt 81920 ]; then
+            echo "::error::Bundle exceeds 80 KB ($size bytes) — investigate"
+            exit 1
+          fi

@@ -156,7 +156,7 @@ export async function publishPost(
     for (let i = 0; i < outcome.toUpload.length; i += PARALLEL_UPLOADS) {
       const batch = outcome.toUpload.slice(i, i + PARALLEL_UPLOADS);
 
-      // eslint-disable-next-line no-await-in-loop
+       
       await Promise.all(
         batch.map(async (asset) => {
           const result = await uploadOne(app, s3, asset, slug, settings);
