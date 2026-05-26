@@ -2,31 +2,33 @@ import { Notice, Plugin } from 'obsidian';
 
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
 import { hasSecretStorageRuntime } from './secrets';
+import { FirstfingerSettingTab } from './ui/settings-tab';
 import type { PluginSettings } from './types';
 
 /**
  * firstfinger-publisher — minimal CMS inside Obsidian for Hugo blogs.
  *
  * Lifecycle layout:
- *
- *   onload()              ← keep < 5ms: only register commands, settings tab
- *   onLayoutReady()       ← load settings, warm provider preset, activate
- *                           commands (settings now available)
- *   onunload()            ← registerEvent/registerInterval auto-clean; no
- *                           manual teardown needed in v0.1.0
+ *   onload()              ← keep < 5ms: register commands, settings tab,
+ *                           schedule deferred init
+ *   onLayoutReady()       ← load settings, runtime feature-detect, flip
+ *                           `ready` so command callbacks activate
+ *   onunload()            ← registerEvent / registerInterval auto-clean;
+ *                           no persistent state to tear down
  */
 export default class FirstfingerPublisher extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
 
-  /**
-   * `true` after onLayoutReady has loaded settings. Commands check this and
-   * politely refuse if invoked too early.
-   */
+  /** `true` after deferred init finishes. Commands gate on this. */
   private ready = false;
 
   async onload() {
-    // Register commands eagerly so they appear in the palette right away.
-    // Their callbacks no-op until `ready` flips true.
+    // Settings tab — visible immediately so the user can configure even
+    // before settings load (it operates on the in-memory DEFAULT_SETTINGS
+    // until deferredInit replaces them).
+    this.addSettingTab(new FirstfingerSettingTab(this.app, this, this));
+
+    // Commands registered now; their callbacks early-out until `ready`.
     this.addCommand({
       id: 'publish-current-post',
       name: 'Publish current post',
@@ -41,19 +43,18 @@ export default class FirstfingerPublisher extends Plugin {
         }
 
         if (!checking) {
-          // Pipeline lands in P9; for now this is a friendly stub.
-          new Notice('firstfinger-publisher: publish pipeline lands in P9');
+          // P12 replaces this stub with the real pipeline invocation +
+          // PublishModal. For now: friendly notice.
+          new Notice(
+            'Publish pipeline wires into this command in P12. ' +
+              'Settings + tests are usable now.',
+          );
         }
 
         return true;
       },
     });
 
-    // Settings tab lands in P10. Registered here so an empty placeholder
-    // shows up in Settings → Community plugins while we build out the form.
-    // (Will be replaced with real UI in P10.)
-
-    // Defer everything else.
     this.app.workspace.onLayoutReady(() => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.deferredInit();
@@ -61,32 +62,27 @@ export default class FirstfingerPublisher extends Plugin {
   }
 
   async onunload() {
-    // No manual cleanup — registerEvent / registerInterval / registerDomEvent
-    // are auto-cleaned, and we don't open any persistent network sockets.
+    // No manual teardown — registerEvent / registerInterval / registerDomEvent
+    // are auto-cleaned; we don't hold any persistent sockets or timers.
   }
 
-  /**
-   * Heavy work deferred until after the workspace is ready. Anything that
-   * touches the vault, reads settings, or hits the network goes here.
-   */
+  /** Heavy work after the workspace is ready. */
   private async deferredInit() {
     this.settings = await loadSettings(this);
 
     if (!hasSecretStorageRuntime(this.app)) {
-      // Not fatal — the secrets module falls back to vault-scoped
-      // localStorage. Worth surfacing once so the user knows their runtime
-      // is older than the recommended API.
       // eslint-disable-next-line no-console
       console.warn(
-        '[firstfinger-publisher] app.secretStorage not available; using ' +
-          'localStorage fallback. Update Obsidian to 1.5+ for the proper API.',
+        '[firstfinger-publisher] app.secretStorage not available; ' +
+          'falling back to vault-scoped localStorage. ' +
+          'Upgrade Obsidian to 1.5+ for the proper API.',
       );
     }
 
     this.ready = true;
   }
 
-  /** Persist current settings. Called from the settings tab in P10. */
+  /** Called by the settings tab when any field changes. */
   async persist() {
     await saveSettings(this, this.settings);
   }
