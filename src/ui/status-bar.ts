@@ -1,7 +1,9 @@
+import { Notice } from 'obsidian';
 import type { App, TFile } from 'obsidian';
 
+import { lintFrontmatter } from '../publish/lint';
 import type { PipelinePhase } from '../publish/pipeline';
-import type { PluginSettings } from '../types';
+import type { FrontmatterIssue, PluginSettings } from '../types';
 
 /**
  * Status-bar chip — the always-visible Forge UI element.
@@ -35,6 +37,10 @@ export class StatusBarChip {
   private publishing = false;
   private currentPhase: PipelinePhase | null = null;
   private uploadStatus = '';
+  /** Last lint outcome for the currently-active post (or empty). */
+  private lintIssues: FrontmatterIssue[] = [];
+  /** Debounce handle for the lint scan. */
+  private lintTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly app: App,
@@ -54,9 +60,23 @@ export class StatusBarChip {
     this.interval = setInterval(() => this.render(), REFRESH_MS);
 
     // Listen for active-file changes to update the chip state.
-    this.app.workspace.on('active-leaf-change', () => this.render());
-    this.app.workspace.on('file-open', () => this.render());
+    this.app.workspace.on('active-leaf-change', () => {
+      this.scheduleLint();
+      this.render();
+    });
+    this.app.workspace.on('file-open', () => {
+      this.scheduleLint();
+      this.render();
+    });
 
+    // Re-lint when the active file's content changes (debounced 2s).
+    this.app.vault.on('modify', (file) => {
+      const active = this.app.workspace.getActiveFile();
+
+      if (active && file.path === active.path) this.scheduleLint();
+    });
+
+    this.scheduleLint();
     this.render();
   }
 
@@ -65,12 +85,35 @@ export class StatusBarChip {
       clearInterval(this.interval);
       this.interval = null;
     }
+    if (this.lintTimer) {
+      clearTimeout(this.lintTimer);
+      this.lintTimer = null;
+    }
     this.el.empty();
   }
 
   /** True while the pipeline is actively running. Used to gate chip clicks. */
   isPublishing(): boolean {
     return this.publishing;
+  }
+
+  /** True if there's at least one `warn`-severity lint issue. */
+  hasLintIssues(): boolean {
+    return this.lintIssues.some((i) => i.severity === 'warn');
+  }
+
+  /** Open a Notice listing the current lint issues. Called on chip click. */
+  showLintDetail(): void {
+    if (this.lintIssues.length === 0) {
+      new Notice('Forge — no lint issues 👍', 4000);
+      return;
+    }
+
+    const body = this.lintIssues
+      .map((i) => `${i.severity === 'warn' ? '⚠' : 'ℹ'} ${i.field}: ${i.message}`)
+      .join('\n');
+
+    new Notice(`Forge lint:\n${body}`, 10_000);
   }
 
   /**
@@ -146,11 +189,49 @@ export class StatusBarChip {
       text = `Forge — published ${relativeTime(lastPublished)}`;
     }
 
-    this.el.createEl('span', { text: `${glyph} ${text}` });
+    // Surface lint warnings as a trailing badge so the chip stays compact
+    // but signals attention.
+    const warnCount = this.lintIssues.filter((i) => i.severity === 'warn').length;
+    const trailing = warnCount > 0 ? `  ⚠ ${warnCount}` : '';
+
+    this.el.createEl('span', { text: `${glyph} ${text}${trailing}` });
     this.el.setAttr(
       'aria-label',
-      'Click to publish this post. Hover for last-publish details.',
+      warnCount > 0
+        ? `${warnCount} frontmatter warning(s). Click to view.`
+        : 'Click to publish this post.',
     );
+  }
+
+  /* ---------- lint ---------- */
+
+  private scheduleLint(): void {
+    if (this.lintTimer) clearTimeout(this.lintTimer);
+    this.lintTimer = setTimeout(() => {
+      this.runLint();
+    }, 2000);
+  }
+
+  private async runLint(): Promise<void> {
+    const file = this.app.workspace.getActiveFile();
+
+    if (!file || !this.isPost(file)) {
+      if (this.lintIssues.length > 0) {
+        this.lintIssues = [];
+        this.render();
+      }
+      return;
+    }
+
+    try {
+      const src = await this.app.vault.cachedRead(file);
+
+      this.lintIssues = lintFrontmatter(src, this.host.settings);
+    } catch {
+      this.lintIssues = [];
+    }
+
+    this.render();
   }
 
   private isPost(file: TFile): boolean {

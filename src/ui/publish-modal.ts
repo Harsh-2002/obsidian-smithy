@@ -104,19 +104,42 @@ export class PublishModal extends Modal {
 
   /**
    * Switch to success state. Re-renders the body with commit + live links.
+   * For dry-run reports the messaging shifts to "would upload" / "would
+   * commit" and no commit URL is shown.
    */
   finish(report: PublishReport) {
-    this.phaseEl.setText('✓ done');
+    const dry = !!report.dryRun;
+
+    this.phaseEl.setText(dry ? '— dry-run complete' : '✓ done');
     this.uploadEl.setText(
       report.uploaded.length === 0
         ? 'no attachments to upload'
-        : `uploaded ${report.uploaded.length} file(s)`,
+        : dry
+          ? `would upload ${report.uploaded.length} file(s)`
+          : `uploaded ${report.uploaded.length} file(s)`,
     );
 
     this.finishEl.empty();
-    this.finishEl.createEl('h3', { text: 'Published' });
+    this.finishEl.createEl('h3', { text: dry ? 'Dry run — nothing happened' : 'Published' });
 
-    if (report.commit?.commitUrl) {
+    if (dry) {
+      const note = this.finishEl.createEl('p');
+
+      note.setText(
+        'No S3 PUTs, no markdown rewrite, no git commit. ' +
+          'Run "Publish current post" for real when ready.',
+      );
+
+      // List the planned uploads so the user can verify the keys.
+      if (report.uploaded.length > 0) {
+        this.finishEl.createEl('h4', { text: 'Would upload:' });
+        const ul = this.finishEl.createEl('ul');
+
+        for (const u of report.uploaded) {
+          ul.createEl('li', { text: u.url });
+        }
+      }
+    } else if (report.commit?.commitUrl) {
       this.finishEl.createEl('p').createEl('a', {
         text: 'view commit on GitHub',
         href: report.commit.commitUrl,
@@ -128,7 +151,7 @@ export class PublishModal extends Modal {
       });
     }
 
-    if (report.livePostUrl) {
+    if (!dry && report.livePostUrl) {
       this.finishEl.createEl('p').createEl('a', {
         text: 'view live post',
         href: report.livePostUrl,

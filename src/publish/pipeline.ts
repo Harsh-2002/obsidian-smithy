@@ -80,6 +80,13 @@ export interface PublishOptions {
     secretAccessKey: string;
     githubToken: string;
   };
+  /**
+   * Plan-only mode. Walks the markdown + resolves refs + reports what
+   * WOULD upload + what WOULD commit, but performs NO side effects
+   * (no S3 PUTs, no vault rewrite, no git commit, no last_published
+   * stamp).
+   */
+  dryRun?: boolean;
 }
 
 export async function publishPost(
@@ -126,11 +133,12 @@ export async function publishPost(
 
   // Resolve secrets BEFORE constructing the client so credential errors
   // surface as PipelineError with a clear message, not a generic S3 fault.
-  const secrets =
-    opts.resolvedSecrets ??
-    (await resolveAllSecrets(app, settings));
+  // Dry-run skips secret resolution entirely.
+  const secrets = opts.dryRun
+    ? { accessKeyId: '', secretAccessKey: '', githubToken: '' }
+    : opts.resolvedSecrets ?? (await resolveAllSecrets(app, settings));
 
-  if (outcome.toUpload.length > 0) {
+  if (!opts.dryRun && outcome.toUpload.length > 0) {
     if (!secrets.accessKeyId || !secrets.secretAccessKey) {
       throw new PipelineError(
         'S3 credentials are not set — fill in access key + secret in Settings',
@@ -140,7 +148,7 @@ export async function publishPost(
   }
 
   const s3 =
-    outcome.toUpload.length > 0
+    !opts.dryRun && outcome.toUpload.length > 0
       ? new S3Client(settings.storage, {
           accessKeyId: secrets.accessKeyId,
           secretAccessKey: secrets.secretAccessKey,
@@ -149,7 +157,7 @@ export async function publishPost(
   const slug = slugFromPostPath(postFile.path, settings.site.postsFolder);
   const replacements: Replacement[] = [];
 
-  if (s3 && outcome.toUpload.length > 0) {
+  if (outcome.toUpload.length > 0) {
     let uploadedCount = 0;
 
     // Run uploads in batches of PARALLEL_UPLOADS to keep mobile happy and
@@ -157,10 +165,11 @@ export async function publishPost(
     for (let i = 0; i < outcome.toUpload.length; i += PARALLEL_UPLOADS) {
       const batch = outcome.toUpload.slice(i, i + PARALLEL_UPLOADS);
 
-       
       await Promise.all(
         batch.map(async (asset) => {
-          const result = await uploadOne(app, s3, asset, slug, settings);
+          const result = opts.dryRun
+            ? await planOne(app, asset, slug, settings)
+            : await uploadOne(app, s3 as S3Client, asset, slug, settings);
 
           report.uploaded.push(result);
           replacements.push({
@@ -187,8 +196,8 @@ export async function publishPost(
 
   tick({ type: 'phase', phase: 'upload', status: 'done' });
 
-  // ---------- 5. REWRITE ----------
-  if (replacements.length > 0) {
+  // ---------- 5. REWRITE (skip in dry-run) ----------
+  if (replacements.length > 0 && !opts.dryRun) {
     tick({ type: 'phase', phase: 'rewrite', status: 'start' });
     try {
       await rewritePost(app, postFile, replacements);
@@ -201,7 +210,17 @@ export async function publishPost(
     tick({ type: 'phase', phase: 'rewrite', status: 'done' });
   }
 
-  // ---------- 6. COMMIT ----------
+  // ---------- 6. COMMIT (skip in dry-run) ----------
+  if (opts.dryRun) {
+    report.dryRun = true;
+    report.livePostUrl = getEngine(settings.site.engine).permalinkFor(
+      postFile.path,
+      settings,
+    );
+
+    return report;
+  }
+
   tick({ type: 'phase', phase: 'commit', status: 'start' });
 
   if (!secrets.githubToken) {
@@ -282,6 +301,30 @@ async function uploadOne(
   await s3.putObject(key, bytes, asset.contentType);
 
   return { ref: asset.ref, key, url, skipped: false };
+}
+
+/**
+ * Dry-run variant of uploadOne — computes the key + URL that WOULD be
+ * used, reads the bytes (to feed {hash} templating), but does NOT issue
+ * the PUT. The returned UploadResult is flagged `skipped: true` so the
+ * UI can distinguish planned-vs-actual uploads.
+ */
+async function planOne(
+  app: App,
+  asset: ResolvedAsset,
+  slug: string,
+  settings: PluginSettings,
+): Promise<UploadResult> {
+  const bytes = await app.vault.readBinary(asset.file);
+  const key = await renderKey(settings.storage.pathTemplate, {
+    date: new Date(),
+    slug,
+    filename: asset.file.name,
+    bytes,
+  });
+  const url = publicUrlFor(settings.storage.publicUrlBase, key);
+
+  return { ref: asset.ref, key, url, skipped: true };
 }
 
 /**

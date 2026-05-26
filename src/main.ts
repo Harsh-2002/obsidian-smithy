@@ -1,5 +1,6 @@
 import { Editor, MarkdownView, Notice, Plugin } from 'obsidian';
 
+import { dryRunCommand } from './commands/dry-run';
 import { newPostCommand } from './commands/new-post';
 import { openShortcodePicker } from './commands/insert-shortcode';
 import {
@@ -115,6 +116,24 @@ export default class Forge extends Plugin {
       },
     });
 
+    /* ===== Dry-run publish ===== */
+    this.addCommand({
+      id: 'dry-run-publish-current-post',
+      name: 'Dry-run publish current post',
+      checkCallback: (checking) => {
+        if (!this.ready) return false;
+
+        const file = this.app.workspace.getActiveFile();
+
+        if (!file) return false;
+        const postsRoot = this.settings.site.postsFolder.replace(/\/+$/, '');
+
+        if (!file.path.startsWith(postsRoot + '/')) return false;
+        if (!checking) dryRunCommand(this.app, this.settings);
+        return true;
+      },
+    });
+
     this.app.workspace.onLayoutReady(() => {
       this.deferredInit();
     });
@@ -143,10 +162,14 @@ export default class Forge extends Plugin {
     this.chip = new StatusBarChip(this.app, chipEl, {
       settings: this.settings,
       onChipClick: () => {
-        // Ignore clicks during an active publish — the chip itself is the
-        // progress UI, and the modal (if surfaced) handles detail. Without
-        // this guard a click would start a second publish concurrently.
+        // Ignore clicks during an active publish — chip is the progress UI.
         if (this.chip?.isPublishing()) return;
+        // If there are open lint warnings, prioritize showing them so the
+        // user has context before publishing.
+        if (this.chip && this.chip.hasLintIssues()) {
+          this.chip.showLintDetail();
+          return;
+        }
         // @ts-expect-error — app.commands isn't in Obsidian's public types
         this.app.commands.executeCommandById('forge:publish-current-post');
       },
