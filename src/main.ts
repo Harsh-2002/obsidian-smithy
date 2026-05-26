@@ -127,11 +127,11 @@ export default class Forge extends Plugin {
     this.chip = new StatusBarChip(this.app, chipEl, {
       settings: this.settings,
       onChipClick: () => {
-        // Click action depends on chip state. When publishing, the chip
-        // delegates to the modal (already shown via publishCurrentCommand).
-        // When idle on a post, clicking runs the publish command.
-        // app.commands.executeCommandById exists at runtime but isn't typed.
-        // @ts-expect-error — undocumented Obsidian runtime API
+        // Ignore clicks during an active publish — the chip itself is the
+        // progress UI, and the modal (if surfaced) handles detail. Without
+        // this guard a click would start a second publish concurrently.
+        if (this.chip?.isPublishing()) return;
+        // @ts-expect-error — app.commands isn't in Obsidian's public types
         this.app.commands.executeCommandById('forge:publish-current-post');
       },
     });

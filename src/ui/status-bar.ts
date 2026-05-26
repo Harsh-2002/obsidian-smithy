@@ -68,6 +68,11 @@ export class StatusBarChip {
     this.el.empty();
   }
 
+  /** True while the pipeline is actively running. Used to gate chip clicks. */
+  isPublishing(): boolean {
+    return this.publishing;
+  }
+
   /**
    * Called by the publish pipeline as it ticks through phases.
    */
