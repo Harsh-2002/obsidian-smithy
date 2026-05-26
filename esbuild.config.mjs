@@ -3,9 +3,9 @@ import process from "process";
 import builtins from "builtin-modules";
 
 const banner = `/*
-static-publisher — minimal CMS inside Obsidian for Hugo blogs.
+forge — minimal CMS inside Obsidian for Hugo blogs.
 Built artifact — do not edit directly.
-Source: https://github.com/Harsh-2002/obsidian-static-publisher
+Source: https://github.com/Harsh-2002/obsidian-forge
 */`;
 
 const prod = process.argv[2] === "production";

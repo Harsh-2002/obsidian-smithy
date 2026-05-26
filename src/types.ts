@@ -1,5 +1,5 @@
 /**
- * Shared types for static-publisher.
+ * Shared types for forge.
  */
 
 import type { TFile } from 'obsidian';

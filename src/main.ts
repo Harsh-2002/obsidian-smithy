@@ -6,11 +6,11 @@ import { publishCurrentCommand } from './commands/publish-current';
 import { uploadSingleAttachment } from './commands/upload-single';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
 import { hasSecretStorageRuntime } from './secrets';
-import { StaticPublisherSettingTab } from './ui/settings-tab';
+import { ForgeSettingTab } from './ui/settings-tab';
 import type { PluginSettings } from './types';
 
 /**
- * Static Publisher — publish posts from your Obsidian vault to a
+ * Forge — publish posts from your Obsidian vault to a
  * static-site repo on GitHub, with S3-compatible attachment uploads.
  *
  * Lifecycle:
@@ -21,14 +21,14 @@ import type { PluginSettings } from './types';
  *   onunload()            ← registerEvent / registerInterval / etc.
  *                           auto-clean; no persistent state to tear down
  */
-export default class StaticPublisher extends Plugin {
+export default class Forge extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
 
   /** Flipped true once deferred init has loaded settings. */
   private ready = false;
 
   async onload() {
-    this.addSettingTab(new StaticPublisherSettingTab(this.app, this, this));
+    this.addSettingTab(new ForgeSettingTab(this.app, this, this));
 
     /* ===== Publish current post ===== */
     this.addCommand({
@@ -114,7 +114,7 @@ export default class StaticPublisher extends Plugin {
     if (!hasSecretStorageRuntime(this.app)) {
       // eslint-disable-next-line no-console
       console.warn(
-        '[static-publisher] app.secretStorage not available; ' +
+        '[forge] app.secretStorage not available; ' +
           'using vault-scoped localStorage as a fallback. ' +
           'Update Obsidian to 1.5+ for the proper API.',
       );

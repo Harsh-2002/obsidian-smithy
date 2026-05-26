@@ -17,12 +17,12 @@ each device you intend to use the plugin on.
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from
    the Community plugin browser.
 2. Command Palette → **BRAT: Add a beta plugin for testing**.
-3. Paste: `https://github.com/Harsh-2002/obsidian-static-publisher`.
-4. Enable **Settings → Community plugins → Static Publisher**.
+3. Paste: `https://github.com/Harsh-2002/obsidian-forge`.
+4. Enable **Settings → Community plugins → Forge**.
 
 ## Configure
 
-Open **Settings → Static Publisher**:
+Open **Settings → Forge**:
 
 | Section | What to set |
 |---|---|
@@ -138,7 +138,7 @@ returned false because the file isn't in the configured posts folder).
 
 ### 10. Secret rotation
 
-Open **Settings → Static Publisher → Git → PAT** → "Set value" → paste a
+Open **Settings → Forge → Git → PAT** → "Set value" → paste a
 NEW PAT. Close settings. Re-run publish.
 
 Expected: publish succeeds with the new token — no plugin reload needed.
@@ -174,10 +174,10 @@ Open Obsidian DevTools console:
 
 ```js
 performance.mark('start');
-await app.plugins.disablePlugin('static-publisher');
-await app.plugins.enablePlugin('static-publisher');
-performance.measure('static-publisher-load', 'start');
-performance.getEntriesByName('static-publisher-load')[0].duration;
+await app.plugins.disablePlugin('forge');
+await app.plugins.enablePlugin('forge');
+performance.measure('forge-load', 'start');
+performance.getEntriesByName('forge-load')[0].duration;
 ```
 
 Expected: < 50ms — `onload()` body alone should be well under 5ms; the
@@ -185,7 +185,7 @@ remainder is plugin loader overhead which we can't influence.
 
 ## Reporting bugs
 
-Open issues at <https://github.com/Harsh-2002/obsidian-static-publisher/issues>
+Open issues at <https://github.com/Harsh-2002/obsidian-forge/issues>
 with:
 
 - which step failed

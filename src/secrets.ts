@@ -94,5 +94,5 @@ export function hasSecretStorageRuntime(app: App): boolean {
 function fallbackKey(app: App, name: string): string {
   const vault = app.vault.getName?.() ?? 'default';
 
-  return `static-publisher.${vault}.${name}`;
+  return `forge.${vault}.${name}`;
 }

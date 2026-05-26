@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-static-publisher",
+  "name": "obsidian-forge",
   "version": "0.1.0",
   "description": "Publish from Obsidian to a static-site GitHub repo with S3-compatible asset uploads.",
   "main": "main.js",

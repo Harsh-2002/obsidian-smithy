@@ -1,4 +1,4 @@
-# Static Publisher
+# Forge
 
 Publish posts from your Obsidian vault to a static-site repo (Hugo in v1)
 with one command. Uploads attachments to any S3-compatible storage and
@@ -60,11 +60,11 @@ Personal notes outside the configured posts folder are never touched.
    from the Community plugin browser
 2. Command Palette → **BRAT: Add a beta plugin for testing**
 3. Paste this repo's URL → install
-4. Enable **Settings → Community plugins → Static Publisher**
+4. Enable **Settings → Community plugins → Forge**
 
 ## Configure
 
-**Settings → Static Publisher** has three sections:
+**Settings → Forge** has three sections:
 
 - **Site** — posts folder, site base URL, default draft state
 - **Storage** — provider preset + bucket / endpoint / region / public URL
@@ -80,8 +80,8 @@ Once configured: open any post inside the posts folder, run
 ## Develop
 
 ```bash
-git clone https://github.com/Harsh-2002/obsidian-static-publisher
-cd obsidian-static-publisher
+git clone https://github.com/Harsh-2002/obsidian-forge
+cd obsidian-forge
 npm install
 npm run dev    # watch + inline sourcemap
 npm run build  # production
@@ -90,7 +90,7 @@ npm run build  # production
 To test live in a sandbox vault:
 
 ```bash
-ln -s "$PWD" ~/<vault>/.obsidian/plugins/static-publisher
+ln -s "$PWD" ~/<vault>/.obsidian/plugins/forge
 ```
 
 Then in Obsidian: enable under Community plugins.

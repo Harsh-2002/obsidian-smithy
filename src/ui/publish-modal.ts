@@ -53,21 +53,21 @@ export class PublishModal extends Modal {
     contentEl.createEl('h2', { text: `Publishing: ${this.postName}` });
 
     this.phaseEl = contentEl.createEl('p', {
-      cls: 'static-publisher-phase',
+      cls: 'forge-phase',
       text: 'starting…',
     });
 
     this.uploadEl = contentEl.createEl('p', {
-      cls: 'static-publisher-upload',
+      cls: 'forge-upload',
       text: '',
     });
 
     this.warningsEl = contentEl.createEl('div', {
-      cls: 'static-publisher-warnings',
+      cls: 'forge-warnings',
     });
 
     this.finishEl = contentEl.createEl('div', {
-      cls: 'static-publisher-finish',
+      cls: 'forge-finish',
     });
 
     new Setting(contentEl).addButton((b) => {

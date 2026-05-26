@@ -30,7 +30,7 @@ export interface SettingsTabHost {
   persist(): Promise<void>;
 }
 
-export class StaticPublisherSettingTab extends PluginSettingTab {
+export class ForgeSettingTab extends PluginSettingTab {
   constructor(
     app: App,
     private readonly host: SettingsTabHost,
@@ -43,7 +43,7 @@ export class StaticPublisherSettingTab extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Static Publisher' });
+    containerEl.createEl('h2', { text: 'Forge' });
     containerEl.createEl('p', {
       text:
         'One-command publish for Hugo blogs. Configure your S3-compatible ' +
@@ -316,7 +316,7 @@ export class StaticPublisherSettingTab extends PluginSettingTab {
       });
       const key = await renderKey(this.host.settings.storage.pathTemplate, {
         date: new Date(),
-        slug: '_static-publisher-test',
+        slug: '_forge-test',
         filename: 'test.txt',
         bytes: new TextEncoder().encode('test').buffer,
       });
