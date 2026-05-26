@@ -39,20 +39,33 @@ Personal notes outside the configured posts folder are never touched.
 
 ## Features
 
-- **One-command publish** from inside any post in a configured posts folder
-- **S3-compatible storage** — built-in presets for Cloudflare R2, AWS S3,
-  DigitalOcean Spaces, Wasabi, Backblaze B2, MinIO, and any custom endpoint
-- **Date-templated upload paths** (`{year}/{month}/{slug}/{filename}` by
+- **One-command publish** with `Mod+Shift+P` default hotkey, from any
+  post in the configured posts folder
+- **Status-bar chip** shows publish freshness ("✓ published 2h ago"),
+  unpublished-edit warnings, live phase during publish, and lint
+  warnings — all in one element
+- **Frontmatter linting** while you write (debounced 2s) — missing
+  title / date / description / tags / cover surface as soft warnings
+- **Dry-run publish** — see what would upload + rewrite + commit
+  without touching S3 or git
+- **S3-compatible storage** — built-in presets for Cloudflare R2,
+  AWS S3, DigitalOcean Spaces, Wasabi, Backblaze B2, MinIO, custom
+- **Date-templated upload paths** (`{year}/{month}/{slug}/{filename}`
   default; tokens for `{day}`, `{ext}`, `{hash}` available)
-- **Wiki-link auto-conversion** so you can write in Obsidian-native style
-  and get Hugo-ready markdown on commit
-- **Hugo shortcode picker** with built-in templates for callout, gallery,
-  audio, video, attachment, bookmark, embed
+- **Wiki-link auto-conversion** — `![[image.png]]` and `[[other-post]]`
+  become Hugo-ready markdown on commit; resolved post titles flow
+  through, not just slugs
+- **Hugo shortcode picker** for callout, gallery, audio, video,
+  attachment, bookmark, embed
 - **GitHub commit-via-REST-API** — no shell git, mobile-safe
-- **Secret storage** via Obsidian's `app.secretStorage` API; settings
-  store only secret names, never plaintext values
-- **Folder-scoped** — only files inside `settings.site.postsFolder` are
-  eligible
+- **Undo last publish** — per-post history captured at publish time;
+  revert via a clean revert commit + local rollback
+- **Publish all drafts** batch command with per-row Publish/Skip
+- **Auto-rename pasted screenshots** (opt-in) → `<slug>-screenshot-N.<ext>`
+- **Secret storage** via Obsidian's `app.secretStorage` API
+- **Folder-scoped** — only files inside `settings.site.postsFolder`
+  are eligible; personal notes never touched
+- **Mobile-friendly** — responsive modal sizing, no Node-only APIs
 
 ## Install (via BRAT)
 
