@@ -1,5 +1,5 @@
 /**
- * Shared types for firstfinger-publisher.
+ * Shared types for static-publisher.
  */
 
 import type { TFile } from 'obsidian';

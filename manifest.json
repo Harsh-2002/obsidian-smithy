@@ -1,9 +1,9 @@
 {
-  "id": "firstfinger-publisher",
-  "name": "Firstfinger Publisher",
+  "id": "static-publisher",
+  "name": "Static Publisher",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "Minimal CMS inside Obsidian for Hugo blogs. Upload attachments to any S3-compatible storage and commit posts to GitHub in one command.",
+  "description": "Publish posts from your Obsidian vault to a static-site repo on GitHub. Uploads attachments to any S3-compatible storage and commits the rewritten markdown — all from one command. Works on desktop and mobile.",
   "author": "Anurag Vishwakarma",
   "authorUrl": "https://github.com/Harsh-2002",
   "isDesktopOnly": false

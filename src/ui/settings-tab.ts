@@ -30,7 +30,7 @@ export interface SettingsTabHost {
   persist(): Promise<void>;
 }
 
-export class FirstfingerSettingTab extends PluginSettingTab {
+export class StaticPublisherSettingTab extends PluginSettingTab {
   constructor(
     app: App,
     private readonly host: SettingsTabHost,
@@ -43,7 +43,7 @@ export class FirstfingerSettingTab extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Firstfinger Publisher' });
+    containerEl.createEl('h2', { text: 'Static Publisher' });
     containerEl.createEl('p', {
       text:
         'One-command publish for Hugo blogs. Configure your S3-compatible ' +
@@ -82,7 +82,7 @@ export class FirstfingerSettingTab extends PluginSettingTab {
     new Setting(c)
       .setName('Site base URL')
       .setDesc(
-        'The public URL of your live site (e.g. https://blog.firstfinger.io). ' +
+        'The public URL of your live site (e.g. https://blog.example.com). ' +
           'Used to build "View live post" links after publish.',
       )
       .addText((t) =>
@@ -316,7 +316,7 @@ export class FirstfingerSettingTab extends PluginSettingTab {
       });
       const key = await renderKey(this.host.settings.storage.pathTemplate, {
         date: new Date(),
-        slug: '_firstfinger-test',
+        slug: '_static-publisher-test',
         filename: 'test.txt',
         bytes: new TextEncoder().encode('test').buffer,
       });

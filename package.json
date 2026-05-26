@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-firstfinger-publisher",
+  "name": "obsidian-static-publisher",
   "version": "0.1.0",
-  "description": "Minimal CMS inside Obsidian for Hugo blogs.",
+  "description": "Publish from Obsidian to a static-site GitHub repo with S3-compatible asset uploads.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
@@ -11,11 +11,12 @@
   "keywords": [
     "obsidian",
     "obsidian-plugin",
+    "static-site",
     "hugo",
-    "cms",
+    "publishing",
     "s3",
     "r2",
-    "publishing"
+    "cms"
   ],
   "author": "Anurag Vishwakarma",
   "license": "MIT",

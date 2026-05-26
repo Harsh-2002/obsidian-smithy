@@ -5,8 +5,8 @@ import type { EngineAdapter, PluginSettings } from '../types';
  *
  * Conventions:
  *   - Posts live at `<postsFolder>/<slug>/index.md` (page bundles).
- *   - Permalink follows Hugo's default `/<section>/<slug>/`. We assume
- *     `posts` is the section (matches the firstfinger blog setup).
+ *   - Permalink follows Hugo's default `/<section>/<slug>/`. v1 assumes
+ *     `posts` is the section name (the most common Hugo blog layout).
  *
  * If the user's Hugo site uses a different permalink scheme, they can
  * override siteBaseUrl and we'll build URLs against that — the
@@ -33,7 +33,7 @@ export const HugoEngine: EngineAdapter = {
     const dd = String(date.getDate()).padStart(2, '0');
     const dateLine = `${yyyy}-${mm}-${dd}`;
 
-    // TOML frontmatter (matches existing firstfinger posts).
+    // Default TOML frontmatter — the most portable shape across Hugo themes.
     return [
       '+++',
       `title = "${escapeQuotes(title)}"`,

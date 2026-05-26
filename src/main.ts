@@ -2,11 +2,11 @@ import { Notice, Plugin } from 'obsidian';
 
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
 import { hasSecretStorageRuntime } from './secrets';
-import { FirstfingerSettingTab } from './ui/settings-tab';
+import { StaticPublisherSettingTab } from './ui/settings-tab';
 import type { PluginSettings } from './types';
 
 /**
- * firstfinger-publisher — minimal CMS inside Obsidian for Hugo blogs.
+ * static-publisher — minimal CMS inside Obsidian for Hugo blogs.
  *
  * Lifecycle layout:
  *   onload()              ← keep < 5ms: register commands, settings tab,
@@ -16,7 +16,7 @@ import type { PluginSettings } from './types';
  *   onunload()            ← registerEvent / registerInterval auto-clean;
  *                           no persistent state to tear down
  */
-export default class FirstfingerPublisher extends Plugin {
+export default class StaticPublisher extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
 
   /** `true` after deferred init finishes. Commands gate on this. */
@@ -26,7 +26,7 @@ export default class FirstfingerPublisher extends Plugin {
     // Settings tab — visible immediately so the user can configure even
     // before settings load (it operates on the in-memory DEFAULT_SETTINGS
     // until deferredInit replaces them).
-    this.addSettingTab(new FirstfingerSettingTab(this.app, this, this));
+    this.addSettingTab(new StaticPublisherSettingTab(this.app, this, this));
 
     // Commands registered now; their callbacks early-out until `ready`.
     this.addCommand({
@@ -73,7 +73,7 @@ export default class FirstfingerPublisher extends Plugin {
     if (!hasSecretStorageRuntime(this.app)) {
       // eslint-disable-next-line no-console
       console.warn(
-        '[firstfinger-publisher] app.secretStorage not available; ' +
+        '[static-publisher] app.secretStorage not available; ' +
           'falling back to vault-scoped localStorage. ' +
           'Upgrade Obsidian to 1.5+ for the proper API.',
       );
