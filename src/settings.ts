@@ -37,6 +37,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     authorName: '',
     authorEmail: '',
     commitMessageTemplate: 'publish: {slug}',
+    // Default to "deploy.yml" — the standard Hugo+Pages workflow name.
+    // Users with a differently-named workflow can edit this; clearing the
+    // field disables the dispatch entirely.
+    dispatchWorkflow: 'deploy.yml',
   },
 };
 

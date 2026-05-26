@@ -44,6 +44,19 @@ export interface GitConfig {
   authorEmail: string;
   /** Template tokens: {slug} {title} {date}. */
   commitMessageTemplate: string;
+  /**
+   * Workflow file name to POST to /actions/workflows/<name>/dispatches
+   * after a successful commit. Empty string disables the dispatch.
+   *
+   * Why this exists: commits made via the REST contents API don't always
+   * trigger `push` event workflows on GitHub Pages — a known quirk when
+   * the commit author equals the token user. Explicitly dispatching
+   * removes the "did Pages actually rebuild?" gap.
+   *
+   * PAT needs `actions:write` for this to succeed; a 403 here doesn't
+   * fail the publish, just shows a notice.
+   */
+  dispatchWorkflow: string;
 }
 
 /* ---------- Site ---------- */
@@ -137,6 +150,13 @@ export interface PublishReport {
   livePostUrl?: string;
   /** True if this was a dry-run — no S3 PUTs / no git commits happened. */
   dryRun?: boolean;
+  /**
+   * True if Forge POSTed a workflow_dispatch after the commit. Absent if
+   * the user disabled the dispatch by clearing GitConfig.dispatchWorkflow.
+   */
+  workflowDispatched?: boolean;
+  /** Dispatch error message — publish itself still succeeded. */
+  workflowDispatchError?: string;
 }
 
 /**

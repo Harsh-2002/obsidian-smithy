@@ -1,7 +1,7 @@
 {
   "id": "forge",
   "name": "Forge",
-  "version": "2026.05.26",
+  "version": "2026.05.27",
   "minAppVersion": "1.5.0",
   "description": "Publish posts from your Obsidian vault to a static-site repo on GitHub. Uploads attachments to any S3-compatible storage and commits the rewritten markdown — all from one command. Works on desktop and mobile.",
   "author": "Anurag Vishwakarma",

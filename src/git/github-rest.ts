@@ -198,6 +198,42 @@ export async function revertFile(
 }
 
 /**
+ * POST /repos/{o}/{r}/actions/workflows/{file}/dispatches — manually
+ * trigger a workflow on the configured branch. Best-effort:
+ *
+ *   - 204 No Content → ok
+ *   - 404 → workflow file doesn't exist OR PAT lacks `actions:read`
+ *   - 403 → PAT lacks `actions:write` (or workflow is disabled in repo)
+ *   - 422 → ref doesn't exist on the workflow's branch filter
+ *
+ * Used by the publish pipeline to close the "commit landed but Pages
+ * didn't rebuild" gap that happens with REST-API-driven commits.
+ */
+export async function dispatchWorkflow(
+  cfg: GitConfig,
+  opts: { workflow: string; token: string },
+): Promise<{ ok: boolean; status: number; message?: string }> {
+  if (!cfg.owner || !cfg.repo || !opts.workflow || !opts.token) {
+    return { ok: false, status: 0, message: 'owner/repo/workflow/token required' };
+  }
+
+  const url = `${API_ROOT}/repos/${cfg.owner}/${cfg.repo}/actions/workflows/${encodeURIComponent(opts.workflow)}/dispatches`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { ...authHeaders(opts.token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ref: cfg.branch }),
+  });
+
+  // 204 No Content is success here.
+  if (res.status === 204) return { ok: true, status: 204 };
+
+  const message = await res.text().catch(() => '');
+
+  return { ok: false, status: res.status, message: message || undefined };
+}
+
+/**
  * Test the token + repo by issuing GET /repos/{o}/{r}. Returns true if
  * the response is 2xx. The settings tab uses this for the "Test token"
  * button.

@@ -449,6 +449,19 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
+      .setName('Auto-trigger workflow')
+      .setDesc('Workflow file to dispatch after commit. Blank = off.')
+      .addText((t) =>
+        t
+          .setPlaceholder('deploy.yml')
+          .setValue(this.host.settings.git.dispatchWorkflow)
+          .onChange(async (v) => {
+            this.host.settings.git.dispatchWorkflow = v.trim();
+            await this.host.persist();
+          }),
+      );
+
+    new Setting(c)
       .setName('Verify')
       .setDesc('Test storage + GitHub.')
       .addButton((b) =>

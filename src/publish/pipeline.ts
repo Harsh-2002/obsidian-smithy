@@ -3,6 +3,7 @@ import type { App } from 'obsidian';
 
 import {
   commitFile,
+  dispatchWorkflow,
   getContentSha,
   GitHubConflictError,
 } from '../git/github-rest';
@@ -365,8 +366,35 @@ export async function publishPost(
   try {
     await setFrontmatterKey(app, postFile, 'last_published', new Date());
   } catch (e) {
-     
+
     console.warn('[forge] could not write last_published stamp:', e);
+  }
+
+  // Best-effort: dispatch the build workflow. REST-API-driven commits don't
+  // always trigger `push` event workflows; an explicit dispatch closes the
+  // gap. Failures (missing workflow file, PAT missing actions:write) are
+  // surfaced in the report but never fail the publish itself.
+  if (settings.git.dispatchWorkflow) {
+    try {
+      const r = await dispatchWorkflow(settings.git, {
+        workflow: settings.git.dispatchWorkflow,
+        token: secrets.githubToken,
+      });
+
+      if (r.ok) {
+        report.workflowDispatched = true;
+      } else {
+        report.workflowDispatched = false;
+        report.workflowDispatchError = `HTTP ${r.status}${r.message ? `: ${r.message.slice(0, 200)}` : ''}`;
+
+        console.warn('[forge] workflow dispatch failed:', r);
+      }
+    } catch (e) {
+      report.workflowDispatched = false;
+      report.workflowDispatchError = e instanceof Error ? e.message : String(e);
+
+      console.warn('[forge] workflow dispatch threw:', e);
+    }
   }
 
   tick({ type: 'phase', phase: 'commit', status: 'done' });

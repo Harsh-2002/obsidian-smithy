@@ -90,12 +90,19 @@ async function runPublish(
     chip?.setPublishing(null);
     chip?.refresh();
 
-    if (report.warnings.length > 0 || report.uploaded.length > 0) {
+    if (
+      report.warnings.length > 0 ||
+      report.uploaded.length > 0 ||
+      report.workflowDispatched === false
+    ) {
       // Show the modal so the user sees what changed.
       showModalIfHidden();
       modal.finish(report);
     } else if (report.commit?.commitUrl) {
-      new Notice(`Forge: published ${file.basename} ✓`, 4000);
+      const suffix =
+        report.workflowDispatched === true ? ' · build triggered' : '';
+
+      new Notice(`Forge: published ${file.basename} ✓${suffix}`, 4000);
     } else {
       // No-op commit (content unchanged on remote).
       new Notice(`Forge: ${file.basename} — no changes to publish`, 4000);
@@ -145,7 +152,7 @@ async function runPublish(
         : String(e);
 
     modal.fail('unknown', detail);
-    // eslint-disable-next-line no-console
+
     console.error('[forge] publish failed:', e);
   }
 }

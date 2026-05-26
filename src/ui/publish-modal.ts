@@ -191,6 +191,19 @@ export class PublishModal extends Modal {
       });
     }
 
+    // Workflow dispatch outcome — only relevant for real publishes.
+    if (!dry && report.workflowDispatched === true) {
+      this.finishEl.createEl('p', {
+        text: '✓ build workflow triggered — site rebuild in progress',
+        cls: 'setting-item-description',
+      });
+    } else if (!dry && report.workflowDispatched === false) {
+      this.finishEl.createEl('p', {
+        text: `⚠ build workflow dispatch failed: ${report.workflowDispatchError ?? 'unknown'} — site may not rebuild until the next push`,
+        cls: 'setting-item-description',
+      });
+    }
+
     this.enableClose();
   }
 
