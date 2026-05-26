@@ -47,6 +47,81 @@
   scroll-margin-top: 16px;
 }
 
+/* Settings status badge — 🟢/🟡/🔴 pill at top of settings tab. */
+.forge-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 18px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+.forge-status-badge-green {
+  border-color: var(--color-green, #4caf50);
+}
+.forge-status-badge-yellow {
+  border-color: var(--color-yellow, #ffb300);
+}
+.forge-status-badge-red {
+  border-color: var(--color-red, #e53935);
+}
+
+/* PAT (and other) explainer <details> blocks inside settings sections. */
+.forge-explainer {
+  margin: 8px 0 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary-alt);
+}
+.forge-explainer > summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.forge-explainer[open] > summary {
+  color: var(--text-normal);
+  margin-bottom: 6px;
+}
+.forge-explainer-body p {
+  margin: 6px 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Welcome modal — fresh-install onboarding surface. */
+.forge-welcome-modal {
+  max-width: 560px;
+}
+.forge-welcome-card {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+}
+.forge-welcome-card h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+.forge-welcome-card p {
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+.forge-welcome-card button.mod-cta {
+  margin-top: 4px;
+}
+.forge-welcome-mobile-tip {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--background-primary-alt);
+}
+
 /* Batch publish modal: one row per draft. */
 .forge-batch-list {
   margin: 12px 0;
@@ -97,5 +172,12 @@
   }
   .forge-quick-start {
     padding: 8px 12px;
+  }
+  .forge-welcome-modal {
+    max-width: unset;
+  }
+  .forge-welcome-card button.mod-cta {
+    width: 100%;
+    min-height: 40px;
   }
 }

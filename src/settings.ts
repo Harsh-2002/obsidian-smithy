@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   settingsVersion: SETTINGS_VERSION,
   autoRenameScreenshots: false,
   publishHistory: {},
+  welcomeModalDismissed: false,
   site: {
     postsFolder: 'content/posts',
     siteBaseUrl: '',

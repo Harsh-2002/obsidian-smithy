@@ -89,6 +89,11 @@ export interface PluginSettings {
    * the LATEST entry per post — full history is in the git log.
    */
   publishHistory: Record<string, PublishHistoryEntry>;
+  /**
+   * True once the user dismissed (or completed) the first-run welcome
+   * modal. Prevents it from reopening on every Obsidian launch.
+   */
+  welcomeModalDismissed: boolean;
 }
 
 /* ---------- Publish pipeline ---------- */
@@ -175,6 +180,14 @@ export interface PublishHistoryEntry {
   previousFileSha?: string;
   /** Decoded body that was on the branch BEFORE this publish — for undo. */
   previousBody?: string;
+  /**
+   * Local file mtime (ms epoch) captured AFTER the `last_published`
+   * frontmatter writeback. Used by the status-bar chip to decide
+   * "Published" vs "Unpublished changes" reliably — comparing the
+   * current mtime against the in-frontmatter `last_published` date
+   * is racy because writing that key bumps the mtime itself.
+   */
+  publishedMtime?: number;
 }
 
 /* ---------- Frontmatter lint ---------- */

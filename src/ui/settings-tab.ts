@@ -9,6 +9,7 @@ import { testAccess } from '../git/github-rest';
 import type { PluginSettings, ProviderPresetId } from '../types';
 
 import { renderQuickStartCard } from './quick-start-card';
+import { renderSettingsStatusBadge } from './settings-status-badge';
 import { SecretModal } from './secret-modal';
 
 /**
@@ -55,6 +56,19 @@ export class ForgeSettingTab extends PluginSettingTab {
         'command from inside a post.',
       cls: 'setting-item-description',
     });
+
+    // Status badge (🟢/🟡/🔴) — async because it checks secrets too.
+    void renderSettingsStatusBadge(
+      containerEl,
+      this.app,
+      this.host.settings,
+      (which) => {
+        this.sectionEls[which]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      },
+    );
 
     // Quick-start card — only renders when sections are missing core fields.
     renderQuickStartCard(containerEl, this.host.settings, (which) => {
@@ -355,6 +369,32 @@ export class ForgeSettingTab extends PluginSettingTab {
     const c = parent.createDiv({ cls: 'forge-section forge-section-git' });
 
     new Setting(c).setName('Git').setHeading();
+
+    // Why-a-PAT explainer (collapsible). Common new-user question:
+    // "if I have the repo cloned with write access, why do I need a
+    // PAT?" — Forge doesn't use git at all, it uses GitHub's REST API
+    // so the same flow works on iPhone. The PAT replaces SSH keys + git
+    // credential helpers.
+    const explainer = c.createEl('details', { cls: 'forge-explainer' });
+
+    explainer.createEl('summary', {
+      text: 'Why does Forge need a PAT instead of using git push?',
+    });
+    const body = explainer.createEl('div', { cls: 'forge-explainer-body' });
+
+    body.createEl('p', {
+      text:
+        "Forge talks to GitHub's web API instead of running `git push`. " +
+        'This is on purpose: the same code works on desktop AND iPhone — ' +
+        'no git binary, no SSH keys, no credential helpers per device.',
+    });
+    body.createEl('p', {
+      text:
+        'A Personal Access Token is your write access for that API. One ' +
+        'secret, set once per device, works the same everywhere. Your ' +
+        'vault never has to be a git clone — Forge bridges it to the ' +
+        'remote repo for you.',
+    });
 
     new Setting(c)
       .setName('Repo owner')

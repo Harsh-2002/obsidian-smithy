@@ -1,5 +1,5 @@
 import { Notice } from 'obsidian';
-import type { App, TFile } from 'obsidian';
+import type { App, EventRef, TFile } from 'obsidian';
 
 import { lintFrontmatter } from '../publish/lint';
 import type { PipelinePhase } from '../publish/pipeline';
@@ -41,6 +41,8 @@ export class StatusBarChip {
   private lintIssues: FrontmatterIssue[] = [];
   /** Debounce handle for the lint scan. */
   private lintTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Obsidian event refs we own and must release on destroy. */
+  private eventRefs: EventRef[] = [];
 
   constructor(
     private readonly app: App,
@@ -60,21 +62,45 @@ export class StatusBarChip {
     this.interval = setInterval(() => this.render(), REFRESH_MS);
 
     // Listen for active-file changes to update the chip state.
-    this.app.workspace.on('active-leaf-change', () => {
-      this.scheduleLint();
-      this.render();
-    });
-    this.app.workspace.on('file-open', () => {
-      this.scheduleLint();
-      this.render();
-    });
+    this.eventRefs.push(
+      this.app.workspace.on('active-leaf-change', () => {
+        this.scheduleLint();
+        this.render();
+      }),
+    );
+    this.eventRefs.push(
+      this.app.workspace.on('file-open', () => {
+        this.scheduleLint();
+        this.render();
+      }),
+    );
 
-    // Re-lint when the active file's content changes (debounced 2s).
-    this.app.vault.on('modify', (file) => {
-      const active = this.app.workspace.getActiveFile();
+    // Re-lint + re-render when the active file's content changes.
+    this.eventRefs.push(
+      this.app.vault.on('modify', (file) => {
+        const active = this.app.workspace.getActiveFile();
 
-      if (active && file.path === active.path) this.scheduleLint();
-    });
+        if (active && file.path === active.path) {
+          this.scheduleLint();
+          // Immediate render so "Unpublished changes" surfaces the moment
+          // the user touches the file.
+          this.render();
+        }
+      }),
+    );
+
+    // The metadataCache re-parses asynchronously after a vault write.
+    // Right after publish the frontmatter we just wrote ISN'T in the
+    // cache yet; refreshing on `changed` is what makes the chip show
+    // "Published just now" the instant Obsidian sees the new
+    // last_published key, instead of "Not yet published".
+    this.eventRefs.push(
+      this.app.metadataCache.on('changed', (file) => {
+        const active = this.app.workspace.getActiveFile();
+
+        if (active && file.path === active.path) this.render();
+      }),
+    );
 
     this.scheduleLint();
     this.render();
@@ -89,6 +115,10 @@ export class StatusBarChip {
       clearTimeout(this.lintTimer);
       this.lintTimer = null;
     }
+    for (const ref of this.eventRefs) {
+      this.app.workspace.offref(ref);
+    }
+    this.eventRefs = [];
     this.el.empty();
   }
 
@@ -170,23 +200,42 @@ export class StatusBarChip {
   private renderIdle(file: TFile): void {
     const cache = this.app.metadataCache.getFileCache(file);
     const lastPublished = parseLastPublished(cache?.frontmatter?.last_published);
-    const fileMtime = new Date(file.stat.mtime);
+    const history = this.host.settings.publishHistory[file.path];
+    const fileMtime = file.stat.mtime;
 
     let glyph: string;
     let text: string;
 
-    if (!lastPublished) {
+    if (!lastPublished && !history?.publishedMtime) {
       glyph = '○';
       text = 'Forge — not yet published';
-    } else if (fileMtime.getTime() > lastPublished.getTime() + 1000) {
-      // 1s tolerance — the frontmatter writeback bumps the mtime a tiny
-      // bit after the stamp, so a strict > would falsely flag the moment
-      // of publish.
+    } else if (history?.publishedMtime) {
+      // Authoritative comparison: mtime-vs-mtime, no race with the
+      // frontmatter write. `publishedMtime` was captured AFTER the
+      // last_published writeback so any later write means the user
+      // actually edited.
+      if (fileMtime > history.publishedMtime + 1000) {
+        glyph = '●';
+        text = 'Forge — unpublished changes';
+      } else {
+        const stampDate =
+          lastPublished ?? new Date(history.publishedAt);
+
+        glyph = '✓';
+        text = `Forge — published ${relativeTime(stampDate)}`;
+      }
+    } else if (
+      lastPublished &&
+      fileMtime > lastPublished.getTime() + 1000
+    ) {
+      // Fallback for posts published before v0.5 (no publishedMtime in
+      // history). 1s tolerance — the frontmatter writeback bumps mtime
+      // a tiny bit after the stamp.
       glyph = '●';
       text = 'Forge — unpublished changes';
     } else {
       glyph = '✓';
-      text = `Forge — published ${relativeTime(lastPublished)}`;
+      text = `Forge — published ${relativeTime(lastPublished as Date)}`;
     }
 
     // Surface lint warnings as a trailing badge so the chip stays compact

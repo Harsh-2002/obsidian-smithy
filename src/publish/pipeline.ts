@@ -104,6 +104,7 @@ export interface PublishOptions {
     commitUrl: string;
     previousFileSha?: string;
     previousBody?: string;
+    publishedMtime?: number;
   }) => Promise<void> | void;
 }
 
@@ -347,7 +348,29 @@ export async function publishPost(
     settings,
   );
 
+  // Best-effort: write `last_published` back to the post's frontmatter so
+  // the status bar can show a freshness indicator on next open. Done AFTER
+  // the commit succeeds so a stamp doesn't get left behind from a partial
+  // pipeline. Failures here don't fail the publish — the source of truth
+  // is the git commit, not the local stamp.
+  //
+  // We snapshot the file's mtime AFTER the write completes — that becomes
+  // the reference value for the "Published" vs "Unpublished changes" chip
+  // check. Comparing against the in-frontmatter date is racy because the
+  // write itself bumps mtime.
+  let publishedMtime: number | undefined;
+
+  try {
+    await setFrontmatterKey(app, postFile, 'last_published', new Date());
+    publishedMtime = postFile.stat.mtime;
+  } catch (e) {
+
+    console.warn('[forge] could not write last_published stamp:', e);
+  }
+
   // Hand the undo data to the caller (plugin shell saves it to settings).
+  // Order matters: this fires AFTER the frontmatter write so publishedMtime
+  // reflects the final file state.
   if (opts.onCommitted) {
     await opts.onCommitted({
       publishedAt: new Date().toISOString(),
@@ -355,19 +378,8 @@ export async function publishPost(
       commitUrl: commit.commitUrl,
       previousFileSha,
       previousBody,
+      publishedMtime,
     });
-  }
-
-  // Best-effort: write `last_published` back to the post's frontmatter so
-  // the status bar can show a freshness indicator on next open. Done AFTER
-  // the commit succeeds so a stamp doesn't get left behind from a partial
-  // pipeline. Failures here don't fail the publish — the source of truth
-  // is the git commit, not the local stamp.
-  try {
-    await setFrontmatterKey(app, postFile, 'last_published', new Date());
-  } catch (e) {
-
-    console.warn('[forge] could not write last_published stamp:', e);
   }
 
   // Best-effort: dispatch the build workflow. REST-API-driven commits don't

@@ -16,6 +16,8 @@ import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
 import { hasSecretStorageRuntime } from './secrets';
 import { ForgeSettingTab } from './ui/settings-tab';
 import { StatusBarChip } from './ui/status-bar';
+import { WelcomeModal } from './ui/welcome-modal';
+import { isFreshInstall } from './util/check-configured';
 import { attachPasteRenameListener } from './util/pasted-image-rename';
 import type { PluginSettings } from './types';
 
@@ -198,6 +200,18 @@ export default class Forge extends Plugin {
       },
     });
 
+    /* ===== Show welcome guide =====
+     * Always-available — even after first-run dismiss, users can pull
+     * the modal back up for the 3-step setup overview. */
+    this.addCommand({
+      id: 'show-welcome-guide',
+      name: 'Show welcome guide',
+      callback: () => {
+        if (!this.ready) return;
+        this.openWelcomeModal();
+      },
+    });
+
     this.app.workspace.onLayoutReady(() => {
       this.deferredInit();
     });
@@ -248,6 +262,51 @@ export default class Forge extends Plugin {
     });
 
     this.ready = true;
+
+    // Fire the welcome modal on truly fresh installs. Conservative
+    // gate: only when owner + siteBaseUrl are empty AND no PAT secret
+    // exists AND user hasn't already dismissed. Existing v0.4 users
+    // never see this on upgrade.
+    if (await isFreshInstall(this.app, this.settings)) {
+      this.openWelcomeModal();
+    }
+  }
+
+  /** Open the welcome modal — wired to the on-load fresh-install gate
+   * and the "Show welcome guide" command. */
+  private openWelcomeModal(): void {
+    new WelcomeModal(this.app, this.settings, {
+      openSettings: () => {
+        // @ts-expect-error — Obsidian's setting object isn't in public types
+        this.app.setting.open();
+        // @ts-expect-error — same
+        this.app.setting.openTabById('forge');
+      },
+      jumpTo: (which) => {
+        // The settings tab handles scroll-to-section via a class hook.
+        // We defer to next tick so the tab DOM exists when we query.
+        setTimeout(() => {
+          const el = document.querySelector(`.forge-section-${which}`);
+
+          if (el instanceof HTMLElement) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      },
+      runTestAll: async () => {
+        // Best-effort: open settings so the user sees the Notice fire
+        // there alongside the existing Test all button. Not strictly
+        // required — the Notice toast fires globally.
+        // @ts-expect-error — app.setting not in Obsidian's public types
+        this.app.setting.open();
+        // @ts-expect-error — app.setting not in Obsidian's public types
+        this.app.setting.openTabById('forge');
+      },
+      markDismissed: async () => {
+        this.settings.welcomeModalDismissed = true;
+        await this.persist();
+      },
+    }).open();
   }
 
   /** Disposer for the paste-rename vault listener. */

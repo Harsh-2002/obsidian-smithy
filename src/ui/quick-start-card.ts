@@ -1,3 +1,4 @@
+import { checkConfigured } from '../util/check-configured';
 import type { PluginSettings } from '../types';
 
 /**
@@ -8,39 +9,14 @@ import type { PluginSettings } from '../types';
  *
  * Goal: a first-time user opens the settings panel and immediately
  * understands the 3 things to fill in instead of staring at 15 fields.
+ *
+ * The "is configured?" check lives in `src/util/check-configured.ts`
+ * so the welcome modal + status badge + quick-start card all share
+ * one definition.
  */
 
-export interface QuickStartCheckResult {
-  /** True iff all three sections have their core fields set. */
-  ready: boolean;
-  missing: {
-    site: boolean;
-    storage: boolean;
-    git: boolean;
-  };
-}
-
-/**
- * Decide whether each section is "configured." Soft definition: just
- * the must-have fields, NOT the optional ones. Secret VALUES (in
- * secretStorage) aren't checked here — the user can see if those are
- * set inline via the Test buttons.
- */
-export function checkQuickStart(s: PluginSettings): QuickStartCheckResult {
-  const siteOk = !!s.site.postsFolder && !!s.site.siteBaseUrl;
-  const storageOk =
-    !!s.storage.bucket &&
-    !!s.storage.endpoint &&
-    !!s.storage.publicUrlBase &&
-    !!s.storage.accessKeyIdSecret &&
-    !!s.storage.secretAccessKeySecret;
-  const gitOk = !!s.git.owner && !!s.git.repo && !!s.git.patSecret;
-
-  return {
-    ready: siteOk && storageOk && gitOk,
-    missing: { site: !siteOk, storage: !storageOk, git: !gitOk },
-  };
-}
+// Re-export for backward compat with any existing imports.
+export { checkConfigured as checkQuickStart } from '../util/check-configured';
 
 /**
  * Render the card into the given container element. Caller is expected
@@ -57,7 +33,7 @@ export function renderQuickStartCard(
 
   if (old) old.remove();
 
-  const status = checkQuickStart(settings);
+  const status = checkConfigured(settings);
 
   if (status.ready) return;
 
