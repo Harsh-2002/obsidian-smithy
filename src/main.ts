@@ -1,6 +1,7 @@
 import { Editor, MarkdownView, Notice, Plugin } from 'obsidian';
 
 import { dryRunCommand } from './commands/dry-run';
+import { insertSamplePostCommand } from './commands/insert-sample-post';
 import { newPostCommand } from './commands/new-post';
 import { openShortcodePicker } from './commands/insert-shortcode';
 import {
@@ -99,6 +100,21 @@ export default class Forge extends Plugin {
           return;
         }
         newPostCommand(this.app, this.settings);
+      },
+    });
+
+    /* ===== Insert sample post =====
+     * Drops a publish-ready demo post into the posts folder so users
+     * can verify their setup before writing real content. */
+    this.addCommand({
+      id: 'insert-sample-post',
+      name: 'Insert sample post',
+      callback: () => {
+        if (!this.ready) {
+          new Notice('Plugin still initializing — try again in a second');
+          return;
+        }
+        void insertSamplePostCommand(this.app, this.settings);
       },
     });
 

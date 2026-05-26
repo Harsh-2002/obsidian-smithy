@@ -78,6 +78,60 @@ export class ForgeSettingTab extends PluginSettingTab {
     this.sectionEls.site = this.renderSiteSection(containerEl);
     this.sectionEls.storage = this.renderStorageSection(containerEl);
     this.sectionEls.git = this.renderGitSection(containerEl);
+    this.renderCrossDeviceSection(containerEl);
+  }
+
+  /* ===== Cross-device + Mobile ===== */
+
+  private renderCrossDeviceSection(parent: HTMLElement): void {
+    const c = parent.createDiv({ cls: 'forge-section' });
+
+    new Setting(c).setName('Using Forge on multiple devices').setHeading();
+
+    const details = c.createEl('details', { cls: 'forge-explainer' });
+
+    details.createEl('summary', {
+      text: 'How to write on desktop AND iPhone / iPad',
+    });
+
+    const body = details.createEl('div', { cls: 'forge-explainer-body' });
+
+    body.createEl('p', {
+      text:
+        'Your Obsidian vault needs to be visible on each device. Forge runs the SAME ' +
+        'publish flow on any of them — only the vault sync layer changes.',
+    });
+
+    const list = body.createEl('ol');
+
+    list.createEl('li').setText(
+      'Vault = your blog repo (free, most self-reliant). Clone the static-site repo ' +
+        'and point Obsidian at the cloned folder. On iOS use the Working Copy app to ' +
+        'handle git; Obsidian opens the same folder. Costs nothing beyond a GitHub account.',
+    );
+    list.createEl('li').setText(
+      'iCloud Drive (free, Apple-only). Put the vault folder in iCloud — Mac, iPhone, iPad ' +
+        'all see the same files.',
+    );
+    list.createEl('li').setText(
+      'Syncthing (free, self-hosted). P2P sync between your devices. Best if they share a LAN.',
+    );
+    list.createEl('li').setText(
+      'Dropbox / Google Drive / OneDrive (free tier). Drop the vault folder into any cloud ' +
+        'storage app and open it from Obsidian.',
+    );
+    list.createEl('li').setText(
+      'Obsidian Sync ($10/mo). Easiest, but optional — every other path on this list is free.',
+    );
+
+    body.createEl('p', {
+      cls: 'setting-item-description',
+      text:
+        "Heads up: secrets (PAT, S3 keys) DON'T sync via the vault — they live in Obsidian's " +
+        "encrypted secret storage. You'll re-enter them once per device, or use the " +
+        '"Forge: Export settings…" command (coming in v0.5 Tier 5) to migrate them via a ' +
+        'passphrase-protected file.',
+    });
   }
 
   /* ===== Site ===== */
