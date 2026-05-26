@@ -7,12 +7,15 @@ import {
   canOpenPublished,
   openPublishedCommand,
 } from './commands/open-published';
+import { publishAllDraftsCommand } from './commands/publish-all-drafts';
 import { publishCurrentCommand } from './commands/publish-current';
+import { undoLastPublishCommand, canUndoPublish } from './commands/undo-publish';
 import { uploadSingleAttachment } from './commands/upload-single';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
 import { hasSecretStorageRuntime } from './secrets';
 import { ForgeSettingTab } from './ui/settings-tab';
 import { StatusBarChip } from './ui/status-bar';
+import { attachPasteRenameListener } from './util/pasted-image-rename';
 import type { PluginSettings } from './types';
 
 /**
@@ -58,7 +61,12 @@ export default class Forge extends Plugin {
         }
 
         if (!checking) {
-          publishCurrentCommand(this.app, this.settings, this.chip);
+          publishCurrentCommand(
+            this.app,
+            this.settings,
+            this.chip,
+            () => this.persist(),
+          );
         }
 
         return true;
@@ -134,6 +142,33 @@ export default class Forge extends Plugin {
       },
     });
 
+    /* ===== Undo last publish ===== */
+    this.addCommand({
+      id: 'undo-last-publish',
+      name: 'Undo last publish',
+      checkCallback: (checking) => {
+        if (!this.ready) return false;
+        if (!canUndoPublish(this.app, this.settings)) return false;
+        if (!checking) {
+          undoLastPublishCommand(this.app, this.settings, () => this.persist());
+        }
+        return true;
+      },
+    });
+
+    /* ===== Publish all drafts ===== */
+    this.addCommand({
+      id: 'publish-all-drafts',
+      name: 'Publish all drafts',
+      callback: () => {
+        if (!this.ready) {
+          new Notice('Plugin still initializing — try again in a second');
+          return;
+        }
+        publishAllDraftsCommand(this.app, this.settings, () => this.persist());
+      },
+    });
+
     this.app.workspace.onLayoutReady(() => {
       this.deferredInit();
     });
@@ -142,6 +177,8 @@ export default class Forge extends Plugin {
   async onunload() {
     this.chip?.destroy();
     this.chip = null;
+    this.pasteDetach?.();
+    this.pasteDetach = null;
   }
 
   private async deferredInit() {
@@ -175,8 +212,19 @@ export default class Forge extends Plugin {
       },
     });
 
+    // Auto-rename listener for pasted screenshots inside the posts folder.
+    // No-op when the user has the toggle OFF (default) or when Custom
+    // Attachment Location is detected.
+    this.pasteDetach = attachPasteRenameListener({
+      app: this.app,
+      settings: this.settings,
+    });
+
     this.ready = true;
   }
+
+  /** Disposer for the paste-rename vault listener. */
+  private pasteDetach: (() => void) | null = null;
 
   /** Called by the settings tab on any field change. */
   async persist() {

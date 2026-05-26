@@ -1,6 +1,10 @@
 import type { App, TFile } from 'obsidian';
 
-import { commitFile, GitHubConflictError } from '../git/github-rest';
+import {
+  commitFile,
+  getContentSha,
+  GitHubConflictError,
+} from '../git/github-rest';
 import { getEngine, slugFromPostPath } from '../engine';
 import { getSecret } from '../secrets';
 import { publicUrlFor, S3Client } from '../storage/s3-client';
@@ -87,6 +91,18 @@ export interface PublishOptions {
    * stamp).
    */
   dryRun?: boolean;
+  /**
+   * Callback invoked after a successful commit, carrying the data needed
+   * to undo this publish later. The plugin shell saves this into its
+   * publishHistory map.
+   */
+  onCommitted?: (entry: {
+    publishedAt: string;
+    commitSha: string;
+    commitUrl: string;
+    previousFileSha?: string;
+    previousBody?: string;
+  }) => Promise<void> | void;
 }
 
 export async function publishPost(
@@ -237,6 +253,22 @@ export async function publishPost(
     .replaceAll('{title}', String(validation.frontmatter.data.title ?? slug))
     .replaceAll('{date}', new Date().toISOString().slice(0, 10));
 
+  // Snapshot the prior file state BEFORE commit so "Undo last publish"
+  // can revert to it. ~50ms duplicate of commitFile's internal lookup —
+  // acceptable for the value of having an undo trail.
+  let previousFileSha: string | undefined;
+  let previousBody: string | undefined;
+
+  try {
+    const prior = await getContentSha(settings.git, postFile.path, secrets.githubToken);
+
+    previousFileSha = prior?.sha;
+    previousBody = prior?.content;
+  } catch {
+    // If the prior-state lookup fails we still commit; undo just won't be
+    // available for this publish.
+  }
+
   let commit: CommitResult;
 
   try {
@@ -259,6 +291,17 @@ export async function publishPost(
     postFile.path,
     settings,
   );
+
+  // Hand the undo data to the caller (plugin shell saves it to settings).
+  if (opts.onCommitted) {
+    await opts.onCommitted({
+      publishedAt: new Date().toISOString(),
+      commitSha: commit.sha,
+      commitUrl: commit.commitUrl,
+      previousFileSha,
+      previousBody,
+    });
+  }
 
   // Best-effort: write `last_published` back to the post's frontmatter so
   // the status bar can show a freshness indicator on next open. Done AFTER

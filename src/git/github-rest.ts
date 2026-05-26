@@ -174,6 +174,30 @@ export async function commitFile(
 }
 
 /**
+ * Revert a previously-committed file to a specific prior body.
+ *
+ *   - Fetches the current SHA at `path` on `branch`.
+ *   - PUTs `previousBody` with that SHA, using a "Revert: ..." message.
+ *   - The result is a single commit that brings the file's content back
+ *     to whatever was in `previousBody`.
+ *
+ * Caller is responsible for ensuring `previousBody` is what they want.
+ * Typical use: pipeline captures previousBody at publish time; "Undo last
+ * publish" passes it back here later.
+ */
+export async function revertFile(
+  cfg: GitConfig,
+  opts: { path: string; previousBody: string; message: string; token: string },
+): Promise<CommitResult> {
+  return commitFile(cfg, {
+    path: opts.path,
+    body: opts.previousBody,
+    message: opts.message,
+    token: opts.token,
+  });
+}
+
+/**
  * Test the token + repo by issuing GET /repos/{o}/{r}. Returns true if
  * the response is 2xx. The settings tab uses this for the "Test token"
  * button.

@@ -68,6 +68,14 @@ export interface PluginSettings {
   git: GitConfig;
   /** Schema version of this settings object — bumped on breaking changes. */
   settingsVersion: number;
+  /** Auto-rename pasted screenshots inside the posts folder (default off). */
+  autoRenameScreenshots: boolean;
+  /**
+   * Per-post publish history keyed by vault-relative post path. Used by
+   * "Undo last publish" to revert the most recent commit. We keep only
+   * the LATEST entry per post — full history is in the git log.
+   */
+  publishHistory: Record<string, PublishHistoryEntry>;
 }
 
 /* ---------- Publish pipeline ---------- */

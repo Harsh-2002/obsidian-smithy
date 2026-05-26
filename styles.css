@@ -46,3 +46,56 @@
 .forge-section {
   scroll-margin-top: 16px;
 }
+
+/* Batch publish modal: one row per draft. */
+.forge-batch-list {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.forge-batch-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+}
+.forge-batch-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.forge-batch-status {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.forge-batch-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+/* Mobile sizing — phones (< 600 px wide). Stack buttons + tighten padding
+ * + size up tap targets. Affects every modal we ship. */
+@media (max-width: 600px) {
+  .modal {
+    padding: 12px !important;
+  }
+
+  .forge-batch-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .forge-batch-buttons button {
+    width: 100%;
+    min-height: 36px;
+  }
+  .forge-quick-start {
+    padding: 8px 12px;
+  }
+}

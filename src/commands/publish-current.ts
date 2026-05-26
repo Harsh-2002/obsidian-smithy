@@ -20,6 +20,7 @@ export async function publishCurrentCommand(
   app: App,
   settings: PluginSettings,
   chip: StatusBarChip | null,
+  saveSettings: () => Promise<void>,
 ): Promise<void> {
   const file = app.workspace.getActiveFile();
 
@@ -39,7 +40,15 @@ export async function publishCurrentCommand(
     }
   };
 
-  await runPublish(app, file, settings, chip, modal, showModalIfHidden);
+  await runPublish(
+    app,
+    file,
+    settings,
+    chip,
+    modal,
+    showModalIfHidden,
+    saveSettings,
+  );
 }
 
 async function runPublish(
@@ -49,6 +58,7 @@ async function runPublish(
   chip: StatusBarChip | null,
   modal: PublishModal,
   showModalIfHidden: () => void,
+  saveSettings: () => Promise<void>,
 ): Promise<void> {
   const handleProgress = (e: ProgressEvent) => {
     // Status-bar chip always reflects current state.
@@ -71,6 +81,10 @@ async function runPublish(
   try {
     const report = await publishPost(app, file, settings, {
       onProgress: handleProgress,
+      onCommitted: async (entry) => {
+        settings.publishHistory[file.path] = entry;
+        await saveSettings();
+      },
     });
 
     chip?.setPublishing(null);
@@ -109,6 +123,7 @@ async function runPublish(
             chip,
             retryModal,
             () => undefined,
+            saveSettings,
           );
         },
       }).open();

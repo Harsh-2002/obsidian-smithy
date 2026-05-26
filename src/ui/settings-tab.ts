@@ -118,6 +118,22 @@ export class ForgeSettingTab extends PluginSettingTab {
           }),
       );
 
+    new Setting(c)
+      .setName('Auto-rename pasted screenshots')
+      .setDesc(
+        'When a "Pasted image …" file lands inside the posts folder, ' +
+          'rename it to <post-slug>-screenshot-N.<ext>. Off by default; ' +
+          'disabled if the Custom Attachment Location plugin is installed.',
+      )
+      .addToggle((tog) =>
+        tog
+          .setValue(this.host.settings.autoRenameScreenshots)
+          .onChange(async (v) => {
+            this.host.settings.autoRenameScreenshots = v;
+            await this.host.persist();
+          }),
+      );
+
     return c;
   }
 

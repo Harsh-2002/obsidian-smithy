@@ -10,6 +10,8 @@ export const SETTINGS_VERSION = 1;
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   settingsVersion: SETTINGS_VERSION,
+  autoRenameScreenshots: false,
+  publishHistory: {},
   site: {
     postsFolder: 'content/posts',
     siteBaseUrl: '',
