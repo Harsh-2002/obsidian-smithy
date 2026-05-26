@@ -108,6 +108,23 @@ ln -s "$PWD" ~/<vault>/.obsidian/plugins/forge
 
 Then in Obsidian: enable under Community plugins.
 
+## Release policy — only the latest, always
+
+There is **exactly one active release** in this repo at any time. When
+a new version ships:
+
+1. The new tag + GitHub release are created.
+2. The `release-cleanup.yml` workflow auto-runs on the
+   `release: published` event and deletes every prior release + tag.
+
+Net effect: visiting <https://github.com/Harsh-2002/obsidian-forge/releases>
+always shows the latest, nothing else. BRAT installs the latest tag, and
+nobody asks for older versions in practice, so storing N copies costs
+storage + bandwidth without a payoff. Older versions stay reachable via
+the git log if anyone ever needs to bisect.
+
+This is enforced by [`/.github/workflows/release-cleanup.yml`](.github/workflows/release-cleanup.yml).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
