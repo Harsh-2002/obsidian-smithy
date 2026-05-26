@@ -1,0 +1,10 @@
+{
+  "id": "firstfinger-publisher",
+  "name": "Firstfinger Publisher",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Minimal CMS inside Obsidian for Hugo blogs. Upload attachments to any S3-compatible storage and commit posts to GitHub in one command.",
+  "author": "Anurag Vishwakarma",
+  "authorUrl": "https://github.com/Harsh-2002",
+  "isDesktopOnly": false
+}
