@@ -1,4 +1,19 @@
-/* forge styles
- * Filled out as the publish-modal, conflict-modal, and snippet-picker land.
- * Placeholder for the v0.1.0 scaffold; intentionally empty.
- */
+/* forge styles */
+
+/* Status-bar chip. Sits in Obsidian's bottom-right status bar; styled to
+ * match its siblings (word-count, sync indicator, etc.) by inheriting
+ * theme variables. */
+.forge-status-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.forge-status-bar:hover {
+  color: var(--text-normal);
+}
+.forge-status-bar span {
+  white-space: nowrap;
+}

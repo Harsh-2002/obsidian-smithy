@@ -57,7 +57,7 @@ export function resolveRefs(
         });
         continue;
       }
-      // Rewrite [[other]] → [alt | other slug](permalink)
+      // Rewrite [[other]] → [alt | post title | basename](permalink)
       const permalink = engine.permalinkFor(target.path, settings);
 
       if (!permalink) {
@@ -68,7 +68,12 @@ export function resolveRefs(
         });
         continue;
       }
-      const text = ref.alt ?? target.basename;
+
+      // Prefer the wiki alias > linked post's frontmatter title > basename.
+      // Obsidian's metadataCache keeps parsed frontmatter for every md file
+      // in the vault, so this is a sync read with no IO.
+      const linkedTitle = readFrontmatterTitle(app, target);
+      const text = ref.alt ?? linkedTitle ?? target.basename;
 
       out.toRewrite.push({ ref, newRaw: `[${text}](${permalink})` });
       continue;
@@ -142,6 +147,25 @@ function resolveAttachmentTarget(
   if (candidate instanceof TFileCls) return candidate;
 
   return null;
+}
+
+/**
+ * Read the `title` field from a markdown file's frontmatter via Obsidian's
+ * metadataCache (sync, no IO — the cache is kept current by Obsidian).
+ * Returns trimmed string if present and non-empty; otherwise null.
+ *
+ * Used by the wiki-link rewriter to produce nice link text like
+ * `[Fixing xterm-ghostty over SSH](/posts/fixing-xterm-ghostty/)` instead
+ * of just the slug.
+ */
+function readFrontmatterTitle(app: App, file: TFile): string | null {
+  const cache = app.metadataCache.getFileCache(file);
+  const title = cache?.frontmatter?.title;
+
+  if (typeof title !== 'string') return null;
+  const trimmed = title.trim();
+
+  return trimmed || null;
 }
 
 /**

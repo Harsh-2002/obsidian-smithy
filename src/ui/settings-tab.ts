@@ -328,7 +328,17 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
       const url = publicUrlFor(this.host.settings.storage.publicUrlBase, key);
 
-      new Notice(`Upload OK → ${url}`, 8000);
+      // Clean up the test blob — no need to leave it in the bucket after
+      // we've verified the round-trip. Failure to delete is logged but
+      // not surfaced (the upload itself already succeeded).
+      const deleted = await client.deleteObject(key).catch(() => false);
+
+      new Notice(
+        deleted
+          ? `Upload OK → ${url} (test object cleaned up)`
+          : `Upload OK → ${url} (test object remains — delete manually if needed)`,
+        8000,
+      );
     } catch (e) {
       new Notice(
         `Test upload failed: ${e instanceof Error ? e.message : String(e)}`,

@@ -7,19 +7,20 @@ import { uploadSingleAttachment } from './commands/upload-single';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from './settings';
 import { hasSecretStorageRuntime } from './secrets';
 import { ForgeSettingTab } from './ui/settings-tab';
+import { StatusBarChip } from './ui/status-bar';
 import type { PluginSettings } from './types';
 
 /**
- * Forge — publish posts from your Obsidian vault to a
- * static-site repo on GitHub, with S3-compatible attachment uploads.
+ * Forge — publish posts from your Obsidian vault to a static-site repo
+ * on GitHub, with S3-compatible attachment uploads.
  *
  * Lifecycle:
  *   onload()              ← keep fast (< 5ms target): register commands +
  *                           settings tab, schedule deferred init
- *   onLayoutReady()       ← load settings, runtime feature-detect, flip
+ *   onLayoutReady()       ← load settings, mount status-bar chip, flip
  *                           `ready` flag so command callbacks activate
- *   onunload()            ← registerEvent / registerInterval / etc.
- *                           auto-clean; no persistent state to tear down
+ *   onunload()            ← Plugin auto-cleans registerEvent /
+ *                           registerInterval / addStatusBarItem
  */
 export default class Forge extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
@@ -27,13 +28,17 @@ export default class Forge extends Plugin {
   /** Flipped true once deferred init has loaded settings. */
   private ready = false;
 
+  /** Status-bar chip — created during deferred init. */
+  private chip: StatusBarChip | null = null;
+
   async onload() {
     this.addSettingTab(new ForgeSettingTab(this.app, this, this));
 
-    /* ===== Publish current post ===== */
+    /* ===== Publish current post (Mod+Shift+P default hotkey) ===== */
     this.addCommand({
       id: 'publish-current-post',
       name: 'Publish current post',
+      hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'P' }],
       checkCallback: (checking) => {
         if (!this.ready) return false;
 
@@ -48,8 +53,7 @@ export default class Forge extends Plugin {
         }
 
         if (!checking) {
-           
-          publishCurrentCommand(this.app, this.settings);
+          publishCurrentCommand(this.app, this.settings, this.chip);
         }
 
         return true;
@@ -78,7 +82,6 @@ export default class Forge extends Plugin {
           new Notice('Plugin still initializing — try again in a second');
           return;
         }
-         
         newPostCommand(this.app, this.settings);
       },
     });
@@ -92,33 +95,46 @@ export default class Forge extends Plugin {
           new Notice('Plugin still initializing — try again in a second');
           return;
         }
-         
         uploadSingleAttachment(this.app, this.settings);
       },
     });
 
     this.app.workspace.onLayoutReady(() => {
-       
       this.deferredInit();
     });
   }
 
   async onunload() {
-    // No persistent sockets/timers; registerEvent + Plugin auto-clean handle
-    // everything else.
+    this.chip?.destroy();
+    this.chip = null;
   }
 
   private async deferredInit() {
     this.settings = await loadSettings(this);
 
     if (!hasSecretStorageRuntime(this.app)) {
-       
       console.warn(
         '[forge] app.secretStorage not available; ' +
           'using vault-scoped localStorage as a fallback. ' +
           'Update Obsidian to 1.5+ for the proper API.',
       );
     }
+
+    // Mount the status-bar chip — visible everywhere, hides itself when
+    // the active file isn't a post.
+    const chipEl = this.addStatusBarItem();
+
+    this.chip = new StatusBarChip(this.app, chipEl, {
+      settings: this.settings,
+      onChipClick: () => {
+        // Click action depends on chip state. When publishing, the chip
+        // delegates to the modal (already shown via publishCurrentCommand).
+        // When idle on a post, clicking runs the publish command.
+        // app.commands.executeCommandById exists at runtime but isn't typed.
+        // @ts-expect-error — undocumented Obsidian runtime API
+        this.app.commands.executeCommandById('forge:publish-current-post');
+      },
+    });
 
     this.ready = true;
   }

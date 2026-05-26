@@ -127,6 +127,36 @@ export interface PublishReport {
   warnings: PublishWarning[];
   commit?: CommitResult;
   livePostUrl?: string;
+  /** True if this was a dry-run — no S3 PUTs / no git commits happened. */
+  dryRun?: boolean;
+}
+
+/**
+ * Per-post publish history — keyed by vault-relative post path in plugin
+ * data. Capturing the previous body (decoded) and SHA lets "Undo last
+ * publish" PUT the prior state back without any extra round-trips.
+ */
+export interface PublishHistoryEntry {
+  /** When the publish committed (ISO 8601). */
+  publishedAt: string;
+  /** Commit URL on GitHub. */
+  commitUrl: string;
+  /** Commit SHA on GitHub. */
+  commitSha: string;
+  /** Content SHA of the file BEFORE this publish — undefined if it was a new file. */
+  previousFileSha?: string;
+  /** Decoded body that was on the branch BEFORE this publish — for undo. */
+  previousBody?: string;
+}
+
+/* ---------- Frontmatter lint ---------- */
+
+export type FrontmatterIssueSeverity = 'warn' | 'info';
+
+export interface FrontmatterIssue {
+  field: string;
+  message: string;
+  severity: FrontmatterIssueSeverity;
 }
 
 /* ---------- Engine adapter (extensible to Jekyll/Astro later) ---------- */

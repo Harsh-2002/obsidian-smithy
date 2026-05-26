@@ -85,6 +85,20 @@ export class S3Client {
   }
 
   /**
+   * DELETE an object. Used by the settings tab's "Test upload" to clean
+   * up after itself so we don't accumulate orphan test blobs in the
+   * user's bucket. Returns true if the delete completed cleanly (2xx);
+   * caller should NOT treat a failed test cleanup as fatal — the
+   * upload itself already succeeded.
+   */
+  async deleteObject(key: string): Promise<boolean> {
+    const url = this.buildObjectUrl(key);
+    const res = await this.awsClient.fetch(url, { method: 'DELETE' });
+
+    return res.ok;
+  }
+
+  /**
    * Build the URL for an object. Path-style vs virtual-hosted-style is a
    * provider-specific choice; presets carry the right flag.
    *

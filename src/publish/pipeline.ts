@@ -5,6 +5,7 @@ import { getEngine, slugFromPostPath } from '../engine';
 import { getSecret } from '../secrets';
 import { publicUrlFor, S3Client } from '../storage/s3-client';
 import { renderKey } from '../storage/path-template';
+import { setFrontmatterKey } from '../util/frontmatter-update';
 import type {
   CommitResult,
   PluginSettings,
@@ -239,6 +240,18 @@ export async function publishPost(
     postFile.path,
     settings,
   );
+
+  // Best-effort: write `last_published` back to the post's frontmatter so
+  // the status bar can show a freshness indicator on next open. Done AFTER
+  // the commit succeeds so a stamp doesn't get left behind from a partial
+  // pipeline. Failures here don't fail the publish — the source of truth
+  // is the git commit, not the local stamp.
+  try {
+    await setFrontmatterKey(app, postFile, 'last_published', new Date());
+  } catch (e) {
+     
+    console.warn('[forge] could not write last_published stamp:', e);
+  }
 
   tick({ type: 'phase', phase: 'commit', status: 'done' });
 
