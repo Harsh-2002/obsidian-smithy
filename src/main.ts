@@ -7,6 +7,7 @@ import {
   canOpenPublished,
   openPublishedCommand,
 } from './commands/open-published';
+import { canSetCover, setCoverImageCommand } from './commands/set-cover';
 import { publishAllDraftsCommand } from './commands/publish-all-drafts';
 import { publishCurrentCommand } from './commands/publish-current';
 import { undoLastPublishCommand, canUndoPublish } from './commands/undo-publish';
@@ -124,6 +125,21 @@ export default class Forge extends Plugin {
       },
     });
 
+    /* ===== Set cover image =====
+     * One-shot: pick file → upload → write frontmatter `cover` field.
+     * Use when the image isn't yet in the post folder; otherwise just
+     * reference `cover = "myfile.png"` and publish handles it. */
+    this.addCommand({
+      id: 'set-cover-image',
+      name: 'Set cover image',
+      checkCallback: (checking) => {
+        if (!this.ready) return false;
+        if (!canSetCover(this.app, this.settings)) return false;
+        if (!checking) setCoverImageCommand(this.app, this.settings);
+        return true;
+      },
+    });
+
     /* ===== Dry-run publish ===== */
     this.addCommand({
       id: 'dry-run-publish-current-post',
@@ -169,6 +185,19 @@ export default class Forge extends Plugin {
       },
     });
 
+    /* ===== Show frontmatter lint details =====
+     * The chip's ⚠ N badge already signals the count; this command lets
+     * the user open the per-issue detail without clicking the chip
+     * (which now always publishes). */
+    this.addCommand({
+      id: 'show-lint-details',
+      name: 'Show frontmatter lint details',
+      callback: () => {
+        if (!this.ready) return;
+        this.chip?.showLintDetail();
+      },
+    });
+
     this.app.workspace.onLayoutReady(() => {
       this.deferredInit();
     });
@@ -201,12 +230,10 @@ export default class Forge extends Plugin {
       onChipClick: () => {
         // Ignore clicks during an active publish — chip is the progress UI.
         if (this.chip?.isPublishing()) return;
-        // If there are open lint warnings, prioritize showing them so the
-        // user has context before publishing.
-        if (this.chip && this.chip.hasLintIssues()) {
-          this.chip.showLintDetail();
-          return;
-        }
+        // Always publish on click. Lint warnings surface in the publish
+        // modal (non-blocking) and via the ⚠ N badge on the chip. There's
+        // a separate command "Forge: show lint details" for inspecting
+        // warnings without publishing.
         // @ts-expect-error — app.commands isn't in Obsidian's public types
         this.app.commands.executeCommandById('forge:publish-current-post');
       },

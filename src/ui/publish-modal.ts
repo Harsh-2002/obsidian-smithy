@@ -35,12 +35,20 @@ export class PublishModal extends Modal {
   private uploadStatus = '';
   private warnings: string[] = [];
 
-  // DOM handles
-  private phaseEl!: HTMLElement;
-  private uploadEl!: HTMLElement;
-  private warningsEl!: HTMLElement;
-  private finishEl!: HTMLElement;
-  private closeButtonEl?: HTMLButtonElement;
+  // DOM handles — undefined until onOpen runs. setProgress / finish / fail
+  // can be called BEFORE onOpen (when the chip-first flow buffers events
+  // and only opens the modal on warning/error), so every call site has to
+  // null-check before touching them.
+  private phaseEl: HTMLElement | undefined;
+  private uploadEl: HTMLElement | undefined;
+  private warningsEl: HTMLElement | undefined;
+  private finishEl: HTMLElement | undefined;
+  private closeButtonEl: HTMLButtonElement | undefined;
+
+  // Buffered terminal state — applied at onOpen if the modal opens AFTER
+  // the pipeline finished.
+  private pendingFinish: PublishReport | undefined;
+  private pendingFail: { phase: PipelinePhase | 'unknown'; message: string } | undefined;
 
   constructor(app: App, private readonly postName: string) {
     super(app);
@@ -54,17 +62,21 @@ export class PublishModal extends Modal {
 
     this.phaseEl = contentEl.createEl('p', {
       cls: 'forge-phase',
-      text: 'starting…',
+      text: this.currentPhase
+        ? `${phaseLabel(this.currentPhase)} (${currentStep(this.currentPhase)}/${PHASE_ORDER.length})`
+        : 'starting…',
     });
 
     this.uploadEl = contentEl.createEl('p', {
       cls: 'forge-upload',
-      text: '',
+      text: this.uploadStatus,
     });
 
     this.warningsEl = contentEl.createEl('div', {
       cls: 'forge-warnings',
     });
+    // Replay any warnings that arrived before onOpen.
+    this.renderWarnings();
 
     this.finishEl = contentEl.createEl('div', {
       cls: 'forge-finish',
@@ -76,24 +88,36 @@ export class PublishModal extends Modal {
       // Disable until the pipeline reports finish/fail.
       b.buttonEl.disabled = true;
     });
+
+    // If the pipeline already finished/failed before the modal opened,
+    // apply that terminal state now.
+    if (this.pendingFinish) {
+      this.finish(this.pendingFinish);
+      this.pendingFinish = undefined;
+    } else if (this.pendingFail) {
+      this.fail(this.pendingFail.phase, this.pendingFail.message);
+      this.pendingFail = undefined;
+    }
   }
 
   /**
    * Pipeline progress hook. Called with each ProgressEvent in order.
+   * Tolerant of being called BEFORE onOpen — state is stored on `this`
+   * and rendered when (or if) the modal eventually opens.
    */
   setProgress(event: ProgressEvent) {
     switch (event.type) {
       case 'phase':
         if (event.status === 'start') {
           this.currentPhase = event.phase;
-          this.phaseEl.setText(
+          this.phaseEl?.setText(
             `${phaseLabel(event.phase)} (${currentStep(event.phase)}/${PHASE_ORDER.length})`,
           );
         }
         break;
       case 'upload-progress':
         this.uploadStatus = `Uploading ${event.current}/${event.total}: ${event.filename}`;
-        this.uploadEl.setText(this.uploadStatus);
+        this.uploadEl?.setText(this.uploadStatus);
         break;
       case 'warning':
         this.warnings.push(event.warning.message);
@@ -106,8 +130,16 @@ export class PublishModal extends Modal {
    * Switch to success state. Re-renders the body with commit + live links.
    * For dry-run reports the messaging shifts to "would upload" / "would
    * commit" and no commit URL is shown.
+   *
+   * If called before onOpen (chip-first flow when there are warnings),
+   * the report is buffered and replayed on open.
    */
   finish(report: PublishReport) {
+    if (!this.phaseEl || !this.uploadEl || !this.finishEl) {
+      this.pendingFinish = report;
+      return;
+    }
+
     const dry = !!report.dryRun;
 
     this.phaseEl.setText(dry ? '— dry-run complete' : '✓ done');
@@ -164,8 +196,14 @@ export class PublishModal extends Modal {
 
   /**
    * Switch to error state. `phase` is the pipeline phase that failed.
+   * If called before onOpen, buffered until the modal opens.
    */
   fail(phase: PipelinePhase | 'unknown', message: string) {
+    if (!this.phaseEl || !this.finishEl) {
+      this.pendingFail = { phase, message };
+      return;
+    }
+
     this.phaseEl.setText(`✗ ${phaseLabel(phase as PipelinePhase)} failed`);
     this.finishEl.empty();
     this.finishEl.createEl('h3', { text: 'Publish failed' });
@@ -180,7 +218,7 @@ export class PublishModal extends Modal {
   /* ---------- private ---------- */
 
   private renderWarnings() {
-    if (this.warnings.length === 0) return;
+    if (this.warnings.length === 0 || !this.warningsEl) return;
     this.warningsEl.empty();
     this.warningsEl.createEl('h4', { text: `Warnings (${this.warnings.length})` });
     const ul = this.warningsEl.createEl('ul');

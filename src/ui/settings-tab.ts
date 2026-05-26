@@ -75,11 +75,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Posts folder')
-      .setDesc(
-        'Vault-relative folder holding your blog posts as page bundles ' +
-          '(e.g. content/posts). Only files inside this folder are eligible ' +
-          'for "Publish current post".',
-      )
+      .setDesc('Vault path holding your posts. e.g. content/posts')
       .addText((t) =>
         t
           .setPlaceholder('content/posts')
@@ -91,11 +87,8 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
-      .setName('Site base URL')
-      .setDesc(
-        'The public URL of your live site (e.g. https://blog.example.com). ' +
-          'Used to build "View live post" links after publish.',
-      )
+      .setName('Site URL')
+      .setDesc('Your live site\'s public URL.')
       .addText((t) =>
         t
           .setPlaceholder('https://blog.example.com')
@@ -108,7 +101,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('New posts as drafts')
-      .setDesc('When using "New post", set draft = true in the frontmatter.')
+      .setDesc('Scaffold new posts with draft = true.')
       .addToggle((tog) =>
         tog
           .setValue(this.host.settings.site.newPostsAreDrafts)
@@ -120,11 +113,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Auto-rename pasted screenshots')
-      .setDesc(
-        'When a "Pasted image …" file lands inside the posts folder, ' +
-          'rename it to <post-slug>-screenshot-N.<ext>. Off by default; ' +
-          'disabled if the Custom Attachment Location plugin is installed.',
-      )
+      .setDesc('Rename "Pasted image …" → <slug>-screenshot-N.<ext>')
       .addToggle((tog) =>
         tog
           .setValue(this.host.settings.autoRenameScreenshots)
@@ -146,10 +135,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Provider')
-      .setDesc(
-        'S3-compatible storage provider. Selecting a preset pre-fills the ' +
-          'endpoint, region, and path style — every field stays editable.',
-      )
+      .setDesc('Pre-fills endpoint, region, path style.')
       .addDropdown((dd) => {
         for (const p of Object.values(PROVIDER_PRESETS)) {
           dd.addOption(p.id, p.label);
@@ -179,7 +165,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Bucket')
-      .setDesc('Name of the bucket where attachments will be uploaded.')
+      .setDesc('Where attachments upload to.')
       .addText((t) =>
         t
           .setValue(this.host.settings.storage.bucket)
@@ -191,10 +177,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Endpoint')
-      .setDesc(
-        'S3 API endpoint. Placeholders like {account_id} / {region} should ' +
-          'be replaced with your actual values.',
-      )
+      .setDesc('S3 API endpoint. Replace {placeholders} with real values.')
       .addText((t) =>
         t
           .setValue(this.host.settings.storage.endpoint)
@@ -206,7 +189,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Region')
-      .setDesc('Region for SigV4 signing. R2 uses "auto"; AWS uses e.g. us-east-1.')
+      .setDesc('SigV4 region. R2 = "auto". AWS = e.g. us-east-1.')
       .addText((t) =>
         t
           .setValue(this.host.settings.storage.region)
@@ -217,8 +200,8 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
-      .setName('Force path-style addressing')
-      .setDesc('Required for MinIO and some custom S3-compatible servers.')
+      .setName('Force path-style')
+      .setDesc('Required for MinIO + some custom S3 servers.')
       .addToggle((tog) =>
         tog
           .setValue(this.host.settings.storage.forcePathStyle)
@@ -229,11 +212,8 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
-      .setName('Public URL base')
-      .setDesc(
-        'CDN domain that serves the bucket (e.g. https://cdn.example.com). ' +
-          'All uploaded files are referenced relative to this URL.',
-      )
+      .setName('CDN URL')
+      .setDesc('Your CDN base — e.g. https://cdn.example.com')
       .addText((t) =>
         t
           .setValue(this.host.settings.storage.publicUrlBase)
@@ -245,10 +225,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Path template')
-      .setDesc(
-        'S3 object key template. Tokens: {year} {month} {day} {slug} ' +
-          '{filename} {ext} {hash}. Default groups uploads by post + month.',
-      )
+      .setDesc('Tokens: {year} {month} {day} {slug} {filename} {ext} {hash}')
       .addText((t) =>
         t
           .setValue(this.host.settings.storage.pathTemplate)
@@ -261,11 +238,8 @@ export class ForgeSettingTab extends PluginSettingTab {
     /* --- Secrets --- */
 
     new Setting(c)
-      .setName('Access key ID (secret name)')
-      .setDesc(
-        'Name used in secretStorage. The actual value is set via the ' +
-          '"Set value" button — never typed into this field.',
-      )
+      .setName('Access key ID')
+      .setDesc('Click "Set value" to enter the actual key.')
       .addText((t) =>
         t
           .setValue(this.host.settings.storage.accessKeyIdSecret)
@@ -287,10 +261,8 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
-      .setName('Secret access key (secret name)')
-      .setDesc(
-        'Name used in secretStorage. Value is set via the "Set value" button.',
-      )
+      .setName('Secret access key')
+      .setDesc('Click "Set value" to enter the actual key.')
       .addText((t) =>
         t
           .setValue(this.host.settings.storage.secretAccessKeySecret)
@@ -313,11 +285,8 @@ export class ForgeSettingTab extends PluginSettingTab {
     /* --- Test upload --- */
 
     new Setting(c)
-      .setName('Test connection')
-      .setDesc(
-        'Uploads a tiny 4-byte test object to verify endpoint + credentials + ' +
-          'path template all work end-to-end. Cleans up after itself.',
-      )
+      .setName('Test storage')
+      .setDesc('PUT + DELETE a 4-byte object. Verifies endpoint + keys.')
       .addButton((b) =>
         b.setButtonText('Test upload').onClick(async () => {
           await this.runTestUpload();
@@ -389,7 +358,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Repo owner')
-      .setDesc('GitHub user or organization that owns the repo.')
+      .setDesc('GitHub user or org.')
       .addText((t) =>
         t
           .setValue(this.host.settings.git.owner)
@@ -412,7 +381,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Branch')
-      .setDesc('Default branch to commit to (usually main).')
+      .setDesc('Usually main.')
       .addText((t) =>
         t
           .setValue(this.host.settings.git.branch)
@@ -423,11 +392,8 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
-      .setName('PAT (secret name)')
-      .setDesc(
-        'Name used in secretStorage. The actual PAT value is set via the ' +
-          '"Set value" button. Needs at least the `contents: write` permission.',
-      )
+      .setName('Personal access token')
+      .setDesc('Needs contents: write. Click "Set value" to enter it.')
       .addText((t) =>
         t
           .setValue(this.host.settings.git.patSecret)
@@ -449,7 +415,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Author name')
-      .setDesc('Commit author name (defaults to your Obsidian profile if blank).')
+      .setDesc('Shown in commit author.')
       .addText((t) =>
         t
           .setValue(this.host.settings.git.authorName)
@@ -472,9 +438,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Commit message template')
-      .setDesc(
-        'Used to label publish commits. Tokens: {slug} {title} {date}.',
-      )
+      .setDesc('Tokens: {slug} {title} {date}')
       .addText((t) =>
         t
           .setValue(this.host.settings.git.commitMessageTemplate)
@@ -485,10 +449,8 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
-      .setName('Verify access')
-      .setDesc(
-        'GET /repos/{owner}/{repo} to confirm the PAT has the right scope.',
-      )
+      .setName('Verify')
+      .setDesc('Test storage + GitHub.')
       .addButton((b) =>
         b.setButtonText('Test token').onClick(async () => {
           await this.runTestToken();

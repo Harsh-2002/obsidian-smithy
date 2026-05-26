@@ -136,6 +136,16 @@ async function runPublish(
       return;
     }
 
-    modal.fail('unknown', e instanceof Error ? e.message : String(e));
+    // Unknown error — make sure SOMETHING useful surfaces. Stack trace if
+    // we have one, otherwise the string. Never leak a "Cannot read
+    // properties of undefined" without context.
+    const detail =
+      e instanceof Error
+        ? `${e.name}: ${e.message}${e.stack ? '\n\n' + e.stack.split('\n').slice(0, 5).join('\n') : ''}`
+        : String(e);
+
+    modal.fail('unknown', detail);
+    // eslint-disable-next-line no-console
+    console.error('[forge] publish failed:', e);
   }
 }

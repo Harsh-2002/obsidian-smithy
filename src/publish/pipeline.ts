@@ -1,4 +1,5 @@
-import type { App, TFile } from 'obsidian';
+import { TFile } from 'obsidian';
+import type { App } from 'obsidian';
 
 import {
   commitFile,
@@ -138,6 +139,18 @@ export async function publishPost(
   tick({ type: 'phase', phase: 'resolve', status: 'start' });
   const outcome = resolveRefs(app, postFile, refs, settings);
 
+  // Additionally: look at known frontmatter image fields (cover, image,
+  // banner, og_image, thumbnail, featured_image) for LOCAL refs. The user
+  // shouldn't have to upload separately + paste a URL into frontmatter —
+  // they should just type a filename next to index.md and have publish
+  // do the rest.
+  const fmImageRefs = collectFrontmatterImageAssets(
+    app,
+    postFile,
+    validation.frontmatter.data as Record<string, unknown>,
+    settings,
+  );
+
   for (const w of outcome.warnings) {
     report.warnings.push(w);
     tick({ type: 'warning', warning: w });
@@ -163,8 +176,9 @@ export async function publishPost(
     }
   }
 
+  const totalAssetsToUpload = outcome.toUpload.length + fmImageRefs.length;
   const s3 =
-    !opts.dryRun && outcome.toUpload.length > 0
+    !opts.dryRun && totalAssetsToUpload > 0
       ? new S3Client(settings.storage, {
           accessKeyId: secrets.accessKeyId,
           secretAccessKey: secrets.secretAccessKey,
@@ -173,11 +187,13 @@ export async function publishPost(
   const slug = slugFromPostPath(postFile.path, settings.site.postsFolder);
   const replacements: Replacement[] = [];
 
-  if (outcome.toUpload.length > 0) {
+  /** Frontmatter URL writes queued after upload; keyed by field name. */
+  const frontmatterWrites: Array<{ field: string; url: string }> = [];
+
+  if (totalAssetsToUpload > 0) {
     let uploadedCount = 0;
 
-    // Run uploads in batches of PARALLEL_UPLOADS to keep mobile happy and
-    // give the UI a steady progress tick.
+    // Body refs first.
     for (let i = 0; i < outcome.toUpload.length; i += PARALLEL_UPLOADS) {
       const batch = outcome.toUpload.slice(i, i + PARALLEL_UPLOADS);
 
@@ -197,11 +213,41 @@ export async function publishPost(
           tick({
             type: 'upload-progress',
             current: uploadedCount,
-            total: outcome.toUpload.length,
+            total: totalAssetsToUpload,
             filename: asset.file.name,
           });
         }),
       );
+    }
+
+    // Frontmatter image refs — same upload mechanics, different rewrite
+    // target (the frontmatter field, not the body).
+    for (const fmRef of fmImageRefs) {
+      const fakeAsset = {
+        ref: {
+          kind: 'image' as const,
+          raw: '',
+          target: fmRef.relPath,
+          startIdx: -1,
+          endIdx: -1,
+        },
+        file: fmRef.file,
+        contentType: 'application/octet-stream',
+      };
+
+      const result = opts.dryRun
+        ? await planOne(app, fakeAsset, slug, settings)
+        : await uploadOne(app, s3 as S3Client, fakeAsset, slug, settings);
+
+      report.uploaded.push(result);
+      frontmatterWrites.push({ field: fmRef.field, url: result.url });
+      uploadedCount++;
+      tick({
+        type: 'upload-progress',
+        current: uploadedCount,
+        total: totalAssetsToUpload,
+        filename: fmRef.file.name,
+      });
     }
   }
 
@@ -213,10 +259,18 @@ export async function publishPost(
   tick({ type: 'phase', phase: 'upload', status: 'done' });
 
   // ---------- 5. REWRITE (skip in dry-run) ----------
-  if (replacements.length > 0 && !opts.dryRun) {
+  if ((replacements.length > 0 || frontmatterWrites.length > 0) && !opts.dryRun) {
     tick({ type: 'phase', phase: 'rewrite', status: 'start' });
     try {
-      await rewritePost(app, postFile, replacements);
+      // Frontmatter writes first — each one is its own vault.process call
+      // (small, atomic). Then body rewrite handles all the inline refs.
+      for (const fw of frontmatterWrites) {
+        await setFrontmatterKey(app, postFile, fw.field, fw.url);
+      }
+
+      if (replacements.length > 0) {
+        await rewritePost(app, postFile, replacements);
+      }
     } catch (e) {
       throw new PipelineError(
         `markdown rewrite failed: ${e instanceof Error ? e.message : String(e)}`,
@@ -321,6 +375,72 @@ export async function publishPost(
 }
 
 /* ---------- helpers ---------- */
+
+/**
+ * Known frontmatter keys that typically carry an image reference. We scan
+ * these for local file paths; anything that's already an http(s) URL or
+ * site-absolute (/foo) gets left alone.
+ *
+ * Hugo themes differ; this is the union of the common conventions.
+ */
+const FRONTMATTER_IMAGE_FIELDS = [
+  'cover',
+  'image',
+  'banner',
+  'og_image',
+  'thumbnail',
+  'featured_image',
+];
+
+interface FrontmatterImageRef {
+  field: string;
+  relPath: string;
+  file: TFile;
+}
+
+/**
+ * Look at known cover-like frontmatter fields. For each that holds a
+ * non-empty LOCAL path, resolve to a TFile (relative to the post's
+ * folder). Returns the resolvable ones; missing files are silently
+ * skipped — the publish modal's warning surface is for body refs.
+ */
+function collectFrontmatterImageAssets(
+  app: App,
+  postFile: TFile,
+  fm: Record<string, unknown>,
+  _settings: PluginSettings,
+): FrontmatterImageRef[] {
+  const out: FrontmatterImageRef[] = [];
+  const postDir = postFile.parent?.path ?? '';
+
+  for (const field of FRONTMATTER_IMAGE_FIELDS) {
+    const v = fm[field];
+
+    if (typeof v !== 'string' || !v.trim()) continue;
+    const target = v.trim();
+
+    if (
+      target.startsWith('http://') ||
+      target.startsWith('https://') ||
+      target.startsWith('//') ||
+      target.startsWith('/') ||
+      target.startsWith('data:')
+    ) {
+      continue;
+    }
+
+    // Resolve relative to the post's parent folder.
+    const rel = target.replace(/^\.\//, '');
+    const fullPath = postDir ? `${postDir}/${rel}` : rel;
+    const candidate = app.vault.getAbstractFileByPath(fullPath);
+
+    if (candidate instanceof TFile) {
+      out.push({ field, relPath: target, file: candidate });
+    }
+  }
+
+  return out;
+}
 
 async function uploadOne(
   app: App,

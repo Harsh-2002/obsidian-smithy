@@ -33,14 +33,17 @@ export const HugoEngine: EngineAdapter = {
     const dd = String(date.getDate()).padStart(2, '0');
     const dateLine = `${yyyy}-${mm}-${dd}`;
 
-    // Default TOML frontmatter — the most portable shape across Hugo themes.
+    // Comprehensive TOML frontmatter — all the fields a Hugo theme
+    // typically reads, pre-populated with sensible empty defaults so the
+    // writer doesn't have to remember each one.
     return [
       '+++',
       `title = "${escapeQuotes(title)}"`,
       `date = ${dateLine}`,
       `draft = ${draft}`,
-      'tags = []',
-      'description = ""',
+      `description = ""`,
+      `tags = []`,
+      `cover = ""`,
       '+++',
       '',
       '',

@@ -1,4 +1,4 @@
-import { parseFrontmatter, FrontmatterError } from '../frontmatter/parse';
+import { parseFrontmatter } from '../frontmatter/parse';
 import type { FrontmatterIssue, PluginSettings } from '../types';
 
 /**
@@ -24,27 +24,19 @@ export function lintFrontmatter(
 
   try {
     parsed = parseFrontmatter(postSource);
-  } catch (e) {
-    return [
-      {
-        field: '(frontmatter)',
-        severity: 'warn',
-        message:
-          e instanceof FrontmatterError
-            ? e.message
-            : 'frontmatter failed to parse',
-      },
-    ];
+  } catch {
+    // Half-typed frontmatter throws as the user edits. Stay silent —
+    // the publish validator catches real parse errors at publish time
+    // with a non-blocking modal, where the user expects an action.
+    // Spamming chip warnings during typing creates the very friction
+    // we're trying to remove.
+    return [];
   }
 
   if (parsed.format === 'none') {
-    return [
-      {
-        field: '(frontmatter)',
-        severity: 'warn',
-        message: 'post is missing frontmatter (publish will fail)',
-      },
-    ];
+    // Same reasoning — a brand-new file has no frontmatter yet.
+    // Publish will catch this; no need to harass the writer.
+    return [];
   }
 
   const data = parsed.data;
