@@ -21,7 +21,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # --omit=optional skips the @esbuild/* platform-specific binaries
+        # that don't match the current OS/CPU — npm ci is strict about
+        # them otherwise, and the host (Linux x64) doesn't need the
+        # netbsd / windows / etc. variants to run lint + test + build.
+        run: npm ci --omit=optional
 
       - name: Lint
         run: npm run lint
