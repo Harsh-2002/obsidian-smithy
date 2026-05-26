@@ -43,10 +43,10 @@ Personal notes outside the configured posts folder are never touched.
   and walks you through the 3 sections to configure. Detects an
   existing Hugo config in your vault and offers to prefill the Site
   section.
-- **Encrypted settings export/import** — move a configured Forge
-  between devices (desktop ↔ iPhone) via a passphrase-protected file
-  that rides the vault. AES-GCM via WebCrypto, no plaintext secrets
-  ever land on disk.
+- **One-click settings export/import** — back up or migrate a
+  configured Forge via a single `forge-config.json` file. Plain JSON,
+  human-readable, contains your settings + the 3 secrets. Keep the
+  file private.
 - **Insert sample post** command — drops a ready-to-publish demo post
   so you can verify your setup end-to-end before writing real content.
 - **One-command publish** with `Mod+Shift+P` default hotkey, from any
@@ -93,17 +93,20 @@ Personal notes outside the configured posts folder are never touched.
 ### Moving to a second device (iPhone, work laptop, etc.)
 
 1. On the device that's already configured, Command Palette →
-   **Forge: Export settings…** → enter a passphrase → file lands in
-   your vault as `forge-settings.forge-config`.
+   **Forge: Export settings** → file lands in your vault as
+   `forge-config.json`. One click, no passphrase.
 2. Sync the vault to the second device (via Obsidian Sync, iCloud,
    Working Copy + git, Dropbox — anything).
 3. On the second device: install Forge (BRAT), then Command Palette
-   → **Forge: Import settings…** → enter the same passphrase. Done.
+   → **Forge: Import settings** → click Import. Done.
 4. Run **Test all** in Settings to verify the import succeeded.
+5. **Delete `forge-config.json` from the vault once you're done** if
+   the vault is synced anywhere you don't fully trust.
 
-The bundle includes your 3 secrets (PAT + S3 access key + S3 secret),
-encrypted with AES-GCM. Lose the passphrase and the file is
-unrecoverable — pick something you'll remember.
+The file is plain JSON for simplicity — it contains your settings +
+3 secrets (PAT, S3 access key, S3 secret) in plaintext. Keep it
+private: **never commit it to GitHub**, never paste it into a chat,
+never upload it to a shared cloud drive.
 
 ### Cross-device sync options
 

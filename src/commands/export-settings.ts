@@ -1,173 +1,76 @@
-import { App, Modal, Notice, Setting, TFile } from 'obsidian';
+import { App, Notice, TFile } from 'obsidian';
 
 import { getSecret } from '../secrets';
-import { encryptJson } from '../util/settings-crypto';
 import type { PluginSettings } from '../types';
 
 /**
- * "Forge: Export settings…" — bundle the entire plugin config PLUS the
- * three secrets (PAT, S3 access key, S3 secret) into a passphrase-
- * encrypted JSON file inside the vault.
+ * "Forge: Export settings" — one click → plain JSON config file in the
+ * vault root.
  *
- * Why bundle secrets too: cross-device setup is a documented friction
- * (Anurag's feedback). Forcing users to re-enter 3 secrets per device
- * is exactly the wall this command knocks down. Encryption ensures
- * that the resulting file is safe to ride the vault via any sync
- * mechanism (Obsidian Sync, iCloud, Dropbox, Working Copy…).
+ * Why plain JSON instead of an encrypted bundle: the user explicitly
+ * asked for the simplest possible UX. Trade-off: the file contains
+ * your PAT + S3 secret + S3 access key in plaintext. Keep it private
+ * (don't commit it to GitHub, don't share). Acts as a backup AND a
+ * cross-device migration tool.
  *
- * File default: `forge-settings.forge-config` at vault root. Path is
- * editable in the modal — power users can drop it anywhere.
+ * Output path: `forge-config.json` at vault root, overwritten each
+ * time. The companion "Import settings" command defaults to the same
+ * path so the round-trip is friction-free.
  */
 export async function exportSettingsCommand(
   app: App,
   settings: PluginSettings,
 ): Promise<void> {
-  new ExportModal(app, settings).open();
-}
+  const OUTPUT_PATH = 'forge-config.json';
 
-class ExportModal extends Modal {
-  private passphrase = '';
-  private confirm = '';
-  private outputPath = 'forge-settings.forge-config';
+  try {
+    const [accessKey, secretKey, pat] = await Promise.all([
+      getSecret(app, settings.storage.accessKeyIdSecret),
+      getSecret(app, settings.storage.secretAccessKeySecret),
+      getSecret(app, settings.git.patSecret),
+    ]);
 
-  constructor(
-    app: App,
-    private readonly settings: PluginSettings,
-  ) {
-    super(app);
-  }
+    // Strip per-vault state (publishHistory, welcomeModalDismissed) —
+    // those are NOT config, they describe what happened on THIS device.
+    // Re-importing them on another device would surface stale "published
+    // 2h ago" timestamps for posts you haven't even touched there.
+    const exportable = {
+      schema: 'forge-export.v1',
+      exportedAt: new Date().toISOString(),
+      pluginVersion: '2026.05.26',
+      settings: {
+        site: settings.site,
+        storage: settings.storage,
+        git: settings.git,
+        autoRenameScreenshots: settings.autoRenameScreenshots,
+      },
+      // Bundled keyed by the secret NAMES in settings.* — import uses
+      // the names to write back into the same slots.
+      secrets: {
+        [settings.storage.accessKeyIdSecret]: accessKey ?? '',
+        [settings.storage.secretAccessKeySecret]: secretKey ?? '',
+        [settings.git.patSecret]: pat ?? '',
+      },
+    };
 
-  onOpen() {
-    const { contentEl } = this;
+    const serialized = JSON.stringify(exportable, null, 2);
+    const existing = app.vault.getAbstractFileByPath(OUTPUT_PATH);
 
-    contentEl.empty();
-    contentEl.createEl('h2', { text: 'Export Forge settings' });
-    contentEl.createEl('p', {
-      cls: 'setting-item-description',
-      text:
-        'Bundles your settings AND secrets into one encrypted file. ' +
-        "Drop it into the vault, sync to another device, then run " +
-        '"Forge: Import settings…" with the same passphrase. Pick ' +
-        "something you'll remember — there's no recovery if the " +
-        'passphrase is lost.',
-    });
-
-    new Setting(contentEl)
-      .setName('Output file (inside vault)')
-      .addText((t) =>
-        t.setValue(this.outputPath).onChange((v) => {
-          this.outputPath = v.trim();
-        }),
-      );
-
-    new Setting(contentEl)
-      .setName('Passphrase')
-      .addText((t) => {
-        t.inputEl.type = 'password';
-        t.onChange((v) => {
-          this.passphrase = v;
-        });
-      });
-
-    new Setting(contentEl)
-      .setName('Confirm passphrase')
-      .addText((t) => {
-        t.inputEl.type = 'password';
-        t.onChange((v) => {
-          this.confirm = v;
-        });
-      });
-
-    new Setting(contentEl)
-      .addButton((b) =>
-        b
-          .setButtonText('Export')
-          .setCta()
-          .onClick(async () => {
-            await this.runExport();
-          }),
-      )
-      .addButton((b) => b.setButtonText('Cancel').onClick(() => this.close()));
-  }
-
-  onClose() {
-    this.contentEl.empty();
-  }
-
-  private async runExport(): Promise<void> {
-    if (!this.passphrase) {
-      new Notice('Enter a passphrase');
-      return;
-    }
-    if (this.passphrase !== this.confirm) {
-      new Notice('Passphrases do not match');
-      return;
-    }
-    if (this.passphrase.length < 8) {
-      new Notice('Passphrase must be at least 8 characters');
-      return;
-    }
-    if (!this.outputPath) {
-      new Notice('Pick an output path');
-      return;
+    if (existing instanceof TFile) {
+      await app.vault.modify(existing, serialized);
+    } else {
+      await app.vault.create(OUTPUT_PATH, serialized);
     }
 
-    try {
-      const [accessKey, secretKey, pat] = await Promise.all([
-        getSecret(this.app, this.settings.storage.accessKeyIdSecret),
-        getSecret(this.app, this.settings.storage.secretAccessKeySecret),
-        getSecret(this.app, this.settings.git.patSecret),
-      ]);
+    new Notice(
+      `Forge config exported to ${OUTPUT_PATH}\n` +
+        '⚠ Contains your PAT + S3 keys in plaintext — keep it private. ' +
+        'Do NOT commit it to GitHub.',
+      12000,
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
 
-      // Strip the publishHistory map — it's per-vault state, not config.
-      // Importing it on another device would polute that device's chip
-      // with stale "Published" timestamps for posts that may not even
-      // be opened there.
-      const settingsCopy: Omit<PluginSettings, 'publishHistory'> & {
-        publishHistory?: never;
-      } = {
-        ...this.settings,
-        publishHistory: undefined,
-      };
-
-      delete settingsCopy.publishHistory;
-
-      const bundle = await encryptJson(
-        {
-          schema: 'forge-export.v1',
-          createdAt: new Date().toISOString(),
-          settings: settingsCopy,
-          secrets: {
-            // Stored under their SECRET NAMES so the import can rewrite
-            // them under the same names on the target vault.
-            [this.settings.storage.accessKeyIdSecret]: accessKey ?? null,
-            [this.settings.storage.secretAccessKeySecret]: secretKey ?? null,
-            [this.settings.git.patSecret]: pat ?? null,
-          },
-        },
-        this.passphrase,
-      );
-
-      const serialized = JSON.stringify(bundle, null, 2);
-
-      // Write to the chosen vault path. Overwrite if it already exists.
-      const existing = this.app.vault.getAbstractFileByPath(this.outputPath);
-
-      if (existing instanceof TFile) {
-        await this.app.vault.modify(existing, serialized);
-      } else {
-        await this.app.vault.create(this.outputPath, serialized);
-      }
-
-      new Notice(
-        `Exported to ${this.outputPath} — keep the passphrase safe.`,
-        8000,
-      );
-      this.close();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-
-      new Notice(`Export failed: ${msg}`, 10000);
-    }
+    new Notice(`Export failed: ${msg}`, 10000);
   }
 }

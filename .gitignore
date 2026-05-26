@@ -18,6 +18,9 @@ Thumbs.db
 # Plugin per-vault data (do not commit secrets or per-device state)
 data.json
 
+# Settings export file — contains PAT + S3 keys in plaintext.
+forge-config.json
+
 # NOTE: main.js / styles.css / manifest.json ARE intentionally committed at
 # the repo root — BRAT and Obsidian both fetch them from the default branch
 # at runtime.
