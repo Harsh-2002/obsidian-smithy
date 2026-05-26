@@ -1,5 +1,6 @@
 import { App, Modal, Platform, Setting } from 'obsidian';
 
+import { detectHugoConfig, type HugoDetectResult } from '../util/hugo-config-detect';
 import type { PluginSettings } from '../types';
 
 /**
@@ -29,6 +30,7 @@ export class WelcomeModal extends Modal {
       jumpTo: (which: 'site' | 'storage' | 'git') => void;
       runTestAll: () => Promise<void>;
       markDismissed: () => Promise<void>;
+      persistSettings: () => Promise<void>;
     },
   ) {
     super(app);
@@ -47,6 +49,11 @@ export class WelcomeModal extends Modal {
         "Here's the 3-minute setup. You can come back to this anytime via Settings → Forge.",
       cls: 'setting-item-description',
     });
+
+    // Async auto-detect — append a "Detected your Hugo config" hint
+    // if we find one. Non-blocking; the cards render immediately, the
+    // hint appears once detection finishes.
+    void this.maybeRenderDetectedHint(contentEl);
 
     /* ---- Card 1: Site ---- */
     this.renderCard(contentEl, {
@@ -150,5 +157,61 @@ export class WelcomeModal extends Modal {
     });
 
     btnEl.addEventListener('click', opts.onCta);
+  }
+
+  /**
+   * Scan the vault for a Hugo config file. If found and yields a
+   * baseURL (or a posts folder), surface it as an actionable hint
+   * with a button to apply the suggestion to the user's settings.
+   *
+   * Never auto-applies — we explicitly require a click so the user
+   * sees what's being filled in.
+   */
+  private async maybeRenderDetectedHint(parent: HTMLElement): Promise<void> {
+    let result: HugoDetectResult | null;
+
+    try {
+      result = await detectHugoConfig(this.app);
+    } catch {
+      return; // detection failure is never fatal
+    }
+
+    if (!result) return;
+
+    // Nothing useful to suggest? Skip silently.
+    if (!result.baseUrl && !result.postsFolderExists) return;
+
+    const hint = parent.createDiv({ cls: 'forge-welcome-detected' });
+
+    hint.createEl('strong', { text: 'Detected your blog setup' });
+    hint.createEl('p', {
+      text: `Found ${result.configPath} in your vault. We can prefill the Site section for you.`,
+      cls: 'setting-item-description',
+    });
+
+    const items = hint.createEl('ul');
+
+    if (result.baseUrl) {
+      items.createEl('li', { text: `Site URL: ${result.baseUrl}` });
+    }
+    if (result.postsFolderExists) {
+      items.createEl('li', { text: 'Posts folder: content/posts' });
+    }
+
+    const applyBtn = hint.createEl('button', {
+      text: 'Use these',
+      cls: 'mod-cta',
+    });
+
+    applyBtn.addEventListener('click', async () => {
+      if (result.baseUrl) this.settings.site.siteBaseUrl = result.baseUrl;
+      if (result.postsFolderExists) this.settings.site.postsFolder = 'content/posts';
+      await this.callbacks.persistSettings();
+      hint.empty();
+      hint.createEl('p', {
+        text: '✓ Applied to Site settings.',
+        cls: 'setting-item-description',
+      });
+    });
   }
 }

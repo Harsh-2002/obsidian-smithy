@@ -263,6 +263,34 @@ export class ForgeSettingTab extends PluginSettingTab {
           }),
       )
       .addButton((b) =>
+        b
+          .setButtonText('Create token')
+          .setTooltip(
+            'Open the relevant provider\'s API tokens page in a browser tab.',
+          )
+          .onClick(() => {
+            // Open the provider's API token creation page. URL varies
+            // by preset — we only have a deep-link for R2; others
+            // open the provider's docs.
+            const preset = this.host.settings.storage.preset;
+            const url =
+              preset === 'cloudflare_r2'
+                ? 'https://dash.cloudflare.com/?to=/:account/r2/api-tokens'
+                : preset === 'aws_s3'
+                  ? 'https://console.aws.amazon.com/iam/home#/users'
+                  : preset === 'backblaze_b2'
+                    ? 'https://secure.backblaze.com/app_keys.htm'
+                    : preset === 'digitalocean_spaces'
+                      ? 'https://cloud.digitalocean.com/account/api/spaces'
+                      : preset === 'wasabi'
+                        ? 'https://console.wasabisys.com/'
+                        : 'https://duckduckgo.com/?q=' +
+                          encodeURIComponent(`${preset} S3 API token`);
+
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }),
+      )
+      .addButton((b) =>
         b.setButtonText('Set value').onClick(() => {
           new SecretModal(
             this.app,
@@ -398,12 +426,26 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Repo owner')
-      .setDesc('GitHub user or org.')
+      .setDesc('GitHub user or org. Or paste "owner/repo" — we\'ll split it.')
       .addText((t) =>
         t
           .setValue(this.host.settings.git.owner)
           .onChange(async (v) => {
-            this.host.settings.git.owner = v.trim();
+            const trimmed = v.trim();
+
+            // Convenience: if the user pastes "owner/repo" into the
+            // owner field, split it across both. Avoids the common
+            // "huh, where's the slash go?" friction.
+            if (trimmed.includes('/')) {
+              const [owner, repo] = trimmed.split('/', 2);
+
+              this.host.settings.git.owner = owner;
+              this.host.settings.git.repo = repo;
+              await this.host.persist();
+              this.display(); // re-render so the repo field reflects the split
+              return;
+            }
+            this.host.settings.git.owner = trimmed;
             await this.host.persist();
           }),
       );
@@ -433,7 +475,7 @@ export class ForgeSettingTab extends PluginSettingTab {
 
     new Setting(c)
       .setName('Personal access token')
-      .setDesc('Needs contents: write. Click "Set value" to enter it.')
+      .setDesc('Needs Contents: write. Use Create token for a preset URL.')
       .addText((t) =>
         t
           .setValue(this.host.settings.git.patSecret)
@@ -443,12 +485,34 @@ export class ForgeSettingTab extends PluginSettingTab {
           }),
       )
       .addButton((b) =>
+        b
+          .setButtonText('Create token')
+          .setTooltip(
+            'Opens GitHub with the right scopes preselected (classic PAT). ' +
+              'Fine-grained PATs work too but need manual scope selection.',
+          )
+          .onClick(() => {
+            // Classic PAT creation URL with the `repo` scope (covers
+            // contents:write on both public + private repos) preselected.
+            // GitHub respects scopes + description query params for
+            // CLASSIC tokens only — fine-grained tokens require manual
+            // setup in their UI.
+            const url =
+              'https://github.com/settings/tokens/new' +
+              '?description=Forge%20publish%20token' +
+              '&scopes=repo';
+
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }),
+      )
+      .addButton((b) =>
         b.setButtonText('Set value').onClick(() => {
           new SecretModal(
             this.app,
             this.host.settings.git.patSecret,
             'GitHub Personal Access Token',
-            'Fine-grained PAT scoped to your blog repo with contents: write.',
+            'Fine-grained PAT scoped to your blog repo with Contents: write, ' +
+              'or a classic PAT with `repo` scope.',
           ).open();
         }),
       );
@@ -554,11 +618,16 @@ export class ForgeSettingTab extends PluginSettingTab {
    * Run both Test upload + Test token sequentially and surface ONE notice
    * with annotated outcomes. Saves users two clicks plus the cognitive
    * load of running two checks in sequence.
+   *
+   * Failure messages aim to be ACTIONABLE — instead of "Storage ✗",
+   * we report the specific permission missing or the HTTP status so
+   * the user can fix it directly. R2 example: a 403 on PUT means
+   * "Object Read & Write permission missing on the bucket".
    */
   private async runTestAll(): Promise<void> {
     const parts: string[] = [];
 
-    // Storage
+    // ---- Storage ----
     try {
       const accessKeyId = await getSecret(
         this.app,
@@ -570,7 +639,7 @@ export class ForgeSettingTab extends PluginSettingTab {
       );
 
       if (!accessKeyId || !secretAccessKey) {
-        parts.push('Storage ✗ (secrets unset)');
+        parts.push('Storage ✗ — secrets unset (click "Set value" next to access + secret key)');
       } else {
         const client = new S3Client(this.host.settings.storage, {
           accessKeyId,
@@ -592,32 +661,77 @@ export class ForgeSettingTab extends PluginSettingTab {
         parts.push('Storage ✓');
       }
     } catch (e) {
-      parts.push(
-        `Storage ✗ (${e instanceof Error ? e.message : String(e)})`,
-      );
+      const msg = e instanceof Error ? e.message : String(e);
+      // Heuristic: turn the raw error into something actionable.
+      const detail = explainStorageError(msg);
+
+      parts.push(`Storage ✗ — ${detail}`);
     }
 
-    // Git
+    // ---- Git ----
     try {
       const token = await getSecret(this.app, this.host.settings.git.patSecret);
 
       if (!token) {
-        parts.push('GitHub ✗ (PAT unset)');
+        parts.push('GitHub ✗ — PAT unset (click "Set value" next to Personal access token)');
       } else {
         const result = await testAccess(this.host.settings.git, token);
 
         if (result.ok) {
           parts.push('GitHub ✓');
         } else {
-          parts.push(`GitHub ✗ (HTTP ${result.status})`);
+          const detail = explainGitError(result.status, result.message);
+
+          parts.push(`GitHub ✗ — ${detail}`);
         }
       }
     } catch (e) {
       parts.push(
-        `GitHub ✗ (${e instanceof Error ? e.message : String(e)})`,
+        `GitHub ✗ — ${e instanceof Error ? e.message : String(e)}`,
       );
     }
 
-    new Notice(`Forge test — ${parts.join(' · ')}`, 10000);
+    new Notice(`Forge test — ${parts.join('\n')}`, 12000);
   }
+}
+
+/**
+ * Turn a raw S3 / R2 error message into one the user can act on.
+ */
+function explainStorageError(raw: string): string {
+  const low = raw.toLowerCase();
+
+  if (low.includes('forbidden') || low.includes('403') || low.includes('accessdenied')) {
+    return 'endpoint reachable but PUT denied (check Object Read & Write perm on the bucket)';
+  }
+  if (low.includes('signaturedoesnotmatch') || low.includes('invalidaccesskeyid')) {
+    return 'keys rejected (access key or secret looks wrong)';
+  }
+  if (low.includes('nosuchbucket')) {
+    return 'bucket does not exist on this account';
+  }
+  if (low.includes('failed to fetch') || low.includes('cors')) {
+    return 'CORS blocked — add Obsidian origins to the bucket CORS rules';
+  }
+
+  return raw.slice(0, 140);
+}
+
+/**
+ * Turn a GitHub REST API status + body into actionable advice.
+ */
+function explainGitError(status: number, raw: string | undefined): string {
+  if (status === 401) return 'token rejected (expired or wrong account)';
+  if (status === 403) {
+    return raw && raw.toLowerCase().includes('rate limit')
+      ? 'rate-limited (try again in a few minutes)'
+      : 'token authenticated but lacks Contents access on this repo';
+  }
+  if (status === 404) {
+    return 'repo not found (check owner / name; for private repos the PAT needs access)';
+  }
+  if (status === 422) return 'request was invalid (open an issue if this persists)';
+  if (status >= 500) return `GitHub is having problems (HTTP ${status})`;
+
+  return `HTTP ${status}${raw ? ' — ' + raw.slice(0, 100) : ''}`;
 }

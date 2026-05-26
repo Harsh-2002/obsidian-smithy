@@ -306,6 +306,9 @@ export default class Forge extends Plugin {
         this.settings.welcomeModalDismissed = true;
         await this.persist();
       },
+      persistSettings: async () => {
+        await this.persist();
+      },
     }).open();
   }
 
