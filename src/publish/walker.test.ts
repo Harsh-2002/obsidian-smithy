@@ -90,6 +90,21 @@ describe('walkMarkdown', () => {
     expect(refs[0].raw).toBe('![[clip.mp4]]');
   });
 
+  it('skips refs inside a fenced code block', () => {
+    const refs = walkMarkdown(
+      'real ![a](real.png)\n```md\n![ex](example.png)\n[[not-a-link]]\n```\n',
+    );
+
+    expect(refs).toHaveLength(1);
+    expect(refs[0].target).toBe('real.png');
+  });
+
+  it('skips refs inside inline code', () => {
+    const refs = walkMarkdown('write `![alt](path.png)` to embed');
+
+    expect(refs).toHaveLength(0);
+  });
+
   it('mixes all 4 kinds in one body', () => {
     const refs = walkMarkdown(`
 ![img](one.png)

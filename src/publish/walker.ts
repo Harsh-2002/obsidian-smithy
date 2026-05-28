@@ -1,3 +1,4 @@
+import { codeRegions, inCodeRegion } from '../util/code-regions';
 import type { AssetRef, AssetRefKind } from '../types';
 
 /**
@@ -43,11 +44,16 @@ export function walkMarkdown(body: string): AssetRef[] {
   collectStdRefs(body, refs);
   collectWikiRefs(body, refs);
 
+  // Drop refs that live inside a fenced/inline code region — those are
+  // examples, not real attachments, and must not be uploaded or rewritten.
+  const regions = codeRegions(body);
+  const filtered = refs.filter((r) => !inCodeRegion(r.startIdx, regions));
+
   // Sort by startIdx so downstream consumers (rewriter, progress UI) see
   // refs in the order they appear in the document.
-  refs.sort((a, b) => a.startIdx - b.startIdx);
+  filtered.sort((a, b) => a.startIdx - b.startIdx);
 
-  return refs;
+  return filtered;
 }
 
 /* ---------- internal collectors ---------- */

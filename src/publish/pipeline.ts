@@ -21,8 +21,11 @@ import type {
   UploadResult,
 } from '../types';
 
+import { parseFrontmatter } from '../frontmatter/parse';
+
 import { resolveRefs } from './resolve';
 import { rewritePost, type Replacement } from './rewrite';
+import { transformToHugo } from './transform';
 import { validatePost } from './validate';
 import { walkMarkdown } from './walker';
 
@@ -290,6 +293,15 @@ export async function publishPost(
       settings,
     );
 
+    // Surface what the Obsidian→Hugo transform WOULD change so the dry-run
+    // preview matches the eventual commit.
+    const { warnings: transformWarnings } = transformToHugo(validation.body);
+
+    for (const w of transformWarnings) {
+      report.warnings.push(w);
+      tick({ type: 'warning', warning: w });
+    }
+
     return report;
   }
 
@@ -304,6 +316,22 @@ export async function publishPost(
 
   // Re-read the file post-rewrite so the commit reflects the final state.
   const finalBody = await app.vault.read(postFile);
+
+  // Apply the Obsidian→Hugo transform to the COMMITTED copy only — the
+  // vault note keeps its Obsidian-native syntax. Frontmatter is preserved
+  // byte-for-byte (parseFrontmatter gives the body offset); only the body
+  // is transformed.
+  const parsedFinal = parseFrontmatter(finalBody);
+  const { body: transformedBody, warnings: transformWarnings } = transformToHugo(
+    parsedFinal.body,
+  );
+  const committedBody = finalBody.slice(0, parsedFinal.bodyOffset) + transformedBody;
+
+  for (const w of transformWarnings) {
+    report.warnings.push(w);
+    tick({ type: 'warning', warning: w });
+  }
+
   const commitMessage = settings.git.commitMessageTemplate
     .replaceAll('{slug}', slug)
     .replaceAll('{title}', String(validation.frontmatter.data.title ?? slug))
@@ -330,7 +358,7 @@ export async function publishPost(
   try {
     commit = await commitFile(settings.git, {
       path: postFile.path,
-      body: finalBody,
+      body: committedBody,
       message: commitMessage,
       token: secrets.githubToken,
     });
