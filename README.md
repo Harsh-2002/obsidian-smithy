@@ -1,13 +1,15 @@
 # Smithy
 
-Publish posts from your Obsidian vault to a static-site repo (Hugo in v1)
-with one command. Uploads attachments to any S3-compatible storage and
-commits the rewritten markdown directly via the GitHub REST API. No CI
-indirection, no separate CMS server, no per-image deploy — works
-identically on desktop and mobile.
+Publish posts from your Obsidian vault to a Hugo static-site repo with one
+command. Uploads attachments to any S3-compatible storage and commits the
+rewritten markdown directly via the GitHub REST API. No CI indirection, no
+separate CMS server, no per-image deploy — works identically on desktop and
+mobile.
 
-> **Status: v0.5.x — beta.** Distributed via BRAT for now; community
-> plugin store submission planned after the v0.5 stability soak.
+> **Beta.** Distributed via BRAT for now; community plugin store submission
+> planned after the stability soak. Releases use date versions
+> (`YYYY.MM.DD`) and only the latest is published — see [Release
+> policy](#release-policy--only-the-latest-always).
 
 ## How it works
 
@@ -185,6 +187,10 @@ ln -s "$PWD" ~/<vault>/.obsidian/plugins/smithy
 ```
 
 Then in Obsidian: enable under Community plugins.
+
+For the codebase architecture — the publish pipeline, module map, and the
+invariants to preserve — see [CLAUDE.md](CLAUDE.md). Manual test steps live
+in [TESTING.md](TESTING.md).
 
 ## Release policy — only the latest, always
 
