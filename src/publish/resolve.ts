@@ -3,6 +3,7 @@ import { TFile as TFileCls } from 'obsidian';
 
 import { getEngine } from '../engine';
 import { mimeFromFilename } from '../util/mime';
+import { slugify } from '../util/slug';
 import type {
   AssetRef,
   PluginSettings,
@@ -47,7 +48,8 @@ export function resolveRefs(
     const isWikiLinkToOtherNote = ref.kind === 'wiki-link';
 
     if (isWikiLinkToOtherNote) {
-      const target = resolveWikiTarget(app, ref.target, postFile.path);
+      const { path, heading, block } = splitLinkTarget(ref.target);
+      const target = resolveWikiTarget(app, path, postFile.path);
 
       if (!target) {
         out.warnings.push({
@@ -69,13 +71,28 @@ export function resolveRefs(
         continue;
       }
 
+      // Block refs (#^id) have no Hugo equivalent — keep the link, drop
+      // the anchor, and tell the user. Heading refs map to Hugo's
+      // slugified heading anchors.
+      let finalUrl = permalink;
+
+      if (block) {
+        out.warnings.push({
+          kind: 'dropped-anchor',
+          message: `block reference [[${ref.target}]] has no Hugo equivalent — linking to the post without the anchor`,
+          ref,
+        });
+      } else if (heading) {
+        finalUrl = headingAnchor(permalink, heading);
+      }
+
       // Prefer the wiki alias > linked post's frontmatter title > basename.
       // Obsidian's metadataCache keeps parsed frontmatter for every md file
       // in the vault, so this is a sync read with no IO.
       const linkedTitle = readFrontmatterTitle(app, target);
       const text = ref.alt ?? linkedTitle ?? target.basename;
 
-      out.toRewrite.push({ ref, newRaw: `[${text}](${permalink})` });
+      out.toRewrite.push({ ref, newRaw: `[${text}](${finalUrl})` });
       continue;
     }
 
@@ -87,6 +104,18 @@ export function resolveRefs(
       out.warnings.push({
         kind: ref.kind === 'wiki-embed' ? 'unresolved-embed' : 'unresolved-link',
         message: `attachment not found: ${ref.target}`,
+        ref,
+      });
+      continue;
+    }
+
+    // A wiki-embed of another NOTE (![[some-note]]) is a transclusion, not
+    // an attachment. Uploading the .md to object storage would be wrong, so
+    // skip it with a clear warning. (Full transclusion = future work.)
+    if (ref.kind === 'wiki-embed' && file.extension === 'md') {
+      out.warnings.push({
+        kind: 'unsupported-embed',
+        message: `note transclusion ![[${ref.target}]] isn't supported yet — embed an image/file or inline the text`,
         ref,
       });
       continue;
@@ -113,12 +142,52 @@ function resolveWikiTarget(
   sourcePath: string,
 ): TFile | null {
   // metadataCache.getFirstLinkpathDest accepts links with or without `.md`
-  // and resolves relative to the source file. Strip a trailing `|alias`
-  // just in case (walker should have stripped it already).
-  const target = rawTarget.split('|')[0].trim();
-  const dest = app.metadataCache.getFirstLinkpathDest(target, sourcePath);
+  // and resolves relative to the source file. Strip any `|alias` and `#anchor`
+  // first — getFirstLinkpathDest expects just the link path.
+  const { path } = splitLinkTarget(rawTarget);
+  const dest = app.metadataCache.getFirstLinkpathDest(path, sourcePath);
 
   return dest ?? null;
+}
+
+/**
+ * Split a wiki target into its path and optional fragment.
+ *
+ *   "note"              → { path: "note" }
+ *   "note#Section"      → { path: "note", heading: "Section" }
+ *   "note#^block-id"    → { path: "note", block: "block-id" }
+ *   "note|alias"        → { path: "note" }   (alias stripped defensively)
+ *
+ * Pure + exported for unit tests.
+ */
+export function splitLinkTarget(raw: string): {
+  path: string;
+  heading?: string;
+  block?: string;
+} {
+  const noAlias = raw.split('|')[0].trim();
+  const hashIdx = noAlias.indexOf('#');
+
+  if (hashIdx < 0) return { path: noAlias };
+
+  const path = noAlias.slice(0, hashIdx).trim();
+  const frag = noAlias.slice(hashIdx + 1).trim();
+
+  if (frag.startsWith('^')) return { path, block: frag.slice(1).trim() };
+
+  return { path, heading: frag };
+}
+
+/**
+ * Append a Hugo heading anchor to a permalink. Hugo slugifies heading text
+ * (lowercase, hyphenated); `slugify` is a close-enough approximation for
+ * the common case. Pure + exported for unit tests.
+ */
+export function headingAnchor(permalink: string, heading: string): string {
+  if (!heading.trim()) return permalink;
+  const anchor = slugify(heading);
+
+  return anchor ? `${permalink}#${anchor}` : permalink;
 }
 
 /**

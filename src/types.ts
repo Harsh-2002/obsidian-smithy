@@ -139,7 +139,9 @@ export interface CommitResult {
 export type PublishWarningKind =
   | 'unresolved-link'
   | 'unresolved-embed'
-  | 'unsupported-frontmatter';
+  | 'unsupported-frontmatter'
+  | 'unsupported-embed'
+  | 'dropped-anchor';
 
 export interface PublishWarning {
   kind: PublishWarningKind;
