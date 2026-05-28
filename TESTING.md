@@ -168,7 +168,39 @@ the native picker.
 Expected: file uploads under the `_loose/` slug; CDN URL is copied to
 clipboard; success notice fires.
 
-### 14. Performance
+### 14. Content conversion (Obsidian → Hugo)
+
+In a draft, write each of:
+
+```
+%%this is a private comment%%
+This is ==highlighted== text.
+> [!warning] Heads up
+> Callout body.
+```
+
+Plus a fenced code block containing `==x==`, `%%y%%`, and `> [!note]`.
+
+Dry-run first: the publish modal should report a warning only for any
+unknown callout type. Then publish for real and inspect the committed
+markdown on GitHub (and the rendered live page):
+
+Expected:
+- the `%%comment%%` is gone
+- `==highlighted==` → `<mark>highlighted</mark>`
+- the callout → `{{< callout type="warn" title="Heads up" >}}…{{< /callout >}}`
+- everything inside the code block is byte-for-byte unchanged
+- **your vault note is unchanged** — it still has `%%`, `==`, `> [!…]`
+
+### 15. Frontmatter format
+
+Set **Settings → Site → Frontmatter format** to YAML, run **New post**.
+
+Expected: the scaffolded post opens with a `---` block (not `+++`).
+Switch the setting to TOML, create another post → `+++` block. Existing
+posts in either format publish unchanged.
+
+### 16. Performance
 
 Open Obsidian DevTools console:
 

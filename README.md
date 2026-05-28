@@ -31,11 +31,38 @@ write in Obsidian
        │  • wiki-embeds       → ![](CDN URL)
        │  • wiki-links        → [text](/posts/slug/) (Hugo permalink)
        │
-       └─ commits the rewritten post to GitHub via the REST API
+       ├─ converts Obsidian syntax to Hugo (committed copy only):
+       │  • > [!note]   → {{< callout >}}   • ==text== → <mark>
+       │  • %%comments%% stripped           • code blocks left intact
+       │
+       └─ commits the converted post to GitHub via the REST API
            (works on mobile — no shell git needed)
 ```
 
 Personal notes outside the configured posts folder are never touched.
+
+## What gets converted on publish
+
+Smithy converts Obsidian-flavored markdown into faithful Hugo markdown
+**on the copy committed to git only** — your vault note keeps its
+Obsidian syntax so it stays nice to edit. Conversions are skipped inside
+fenced and inline code, so examples in technical posts stay verbatim.
+
+| Obsidian | Becomes (in the published post) |
+|---|---|
+| `%%comment%%` | removed (Goldmark would otherwise show it on the live site) |
+| `> [!note] Title` callout | `{{< callout type="info" title="Title" >}}…{{< /callout >}}` |
+| `==highlight==` | `<mark>highlight</mark>` |
+| `[[post#Heading]]` | `[text](/posts/post/#heading)` |
+
+Callout types map to four site styles (`info` / `warn` / `success` /
+`danger`); unknown types fall back to `info` with a warning. Note
+transclusion (`![[other-note]]`) and block references (`#^id`) aren't
+supported yet — they're flagged in the publish report rather than
+silently mangled.
+
+New posts are scaffolded with **YAML (`---`)** frontmatter by default;
+switch to TOML (`+++`) under **Settings → Site → Frontmatter format**.
 
 ## Features
 
@@ -65,6 +92,9 @@ Personal notes outside the configured posts folder are never touched.
 - **Wiki-link auto-conversion** — `![[image.png]]` and `[[other-post]]`
   become Hugo-ready markdown on commit; resolved post titles flow
   through, not just slugs
+- **Obsidian→Hugo conversion on commit** — callouts, `==highlights==`,
+  and `%%comments%%` become Hugo-correct markdown in the published copy
+  (vault note untouched); code blocks are never altered
 - **Hugo shortcode picker** for callout, gallery, audio, video,
   attachment, bookmark, embed
 - **GitHub commit-via-REST-API** — no shell git, mobile-safe

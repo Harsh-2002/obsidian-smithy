@@ -390,7 +390,13 @@ export async function publishPost(
 
   try {
     await setFrontmatterKey(app, postFile, 'last_published', new Date());
-    publishedMtime = postFile.stat.mtime;
+    // Read the on-disk mtime (authoritative) rather than the in-memory
+    // TFile.stat, which Obsidian doesn't always refresh synchronously after
+    // a write — that lag is what made the chip flash "unpublished changes"
+    // immediately after a successful publish.
+    const st = await app.vault.adapter.stat(postFile.path);
+
+    publishedMtime = st?.mtime ?? postFile.stat.mtime;
   } catch (e) {
 
     console.warn('[smithy] could not write last_published stamp:', e);
