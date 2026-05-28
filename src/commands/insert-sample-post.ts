@@ -40,7 +40,7 @@ export async function insertSamplePostCommand(
   await ensureFolder(app, bundleDir);
 
   const now = new Date();
-  const body = buildSampleBody(slug, now);
+  const body = buildSampleBody(slug, now, settings.site.frontmatterFormat);
   const file = await app.vault.create(indexPath, body);
 
   // Open in the active leaf so the user lands inside the post.
@@ -76,21 +76,41 @@ async function pickAvailableSlug(
   throw new Error('Could not find a free slug after 50 attempts');
 }
 
-function buildSampleBody(slug: string, now: Date): string {
+function buildSampleBody(
+  slug: string,
+  now: Date,
+  format: PluginSettings['site']['frontmatterFormat'],
+): string {
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const dd = String(now.getDate()).padStart(2, '0');
   const date = `${yyyy}-${mm}-${dd}`;
 
+  const frontmatter =
+    format === 'toml'
+      ? [
+          '+++',
+          'title = "Hello, Smithy"',
+          `date = ${date}`,
+          'draft = true',
+          'description = "A sample post to verify your Smithy setup end-to-end."',
+          'tags = ["smithy", "hello"]',
+          'cover = ""',
+          '+++',
+        ]
+      : [
+          '---',
+          'title: "Hello, Smithy"',
+          `date: ${date}`,
+          'draft: true',
+          'description: "A sample post to verify your Smithy setup end-to-end."',
+          'tags: ["smithy", "hello"]',
+          'cover: ""',
+          '---',
+        ];
+
   return [
-    '+++',
-    'title = "Hello, Smithy"',
-    `date = ${date}`,
-    'draft = true',
-    'description = "A sample post to verify your Smithy setup end-to-end."',
-    'tags = ["smithy", "hello"]',
-    'cover = ""',
-    '+++',
+    ...frontmatter,
     '',
     '# Hello, Smithy',
     '',

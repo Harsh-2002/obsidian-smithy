@@ -27,27 +27,38 @@ export const HugoEngine: EngineAdapter = {
     return base ? `${base}${path}` : path;
   },
 
-  scaffoldPost({ title, date, draft }) {
+  scaffoldPost({ title, date, draft, format }) {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     const dateLine = `${yyyy}-${mm}-${dd}`;
 
-    // Comprehensive TOML frontmatter — all the fields a Hugo theme
-    // typically reads, pre-populated with sensible empty defaults so the
-    // writer doesn't have to remember each one.
-    return [
-      '+++',
-      `title = "${escapeQuotes(title)}"`,
-      `date = ${dateLine}`,
-      `draft = ${draft}`,
-      `description = ""`,
-      `tags = []`,
-      `cover = ""`,
-      '+++',
-      '',
-      '',
-    ].join('\n');
+    // All the fields a Hugo theme typically reads, pre-populated with
+    // sensible empty defaults so the writer doesn't have to remember each.
+    const fields =
+      format === 'toml'
+        ? [
+            '+++',
+            `title = "${escapeQuotes(title)}"`,
+            `date = ${dateLine}`,
+            `draft = ${draft}`,
+            'description = ""',
+            'tags = []',
+            'cover = ""',
+            '+++',
+          ]
+        : [
+            '---',
+            `title: "${escapeQuotes(title)}"`,
+            `date: ${dateLine}`,
+            `draft: ${draft}`,
+            'description: ""',
+            'tags: []',
+            'cover: ""',
+            '---',
+          ];
+
+    return [...fields, '', ''].join('\n');
   },
 };
 

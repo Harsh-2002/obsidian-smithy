@@ -63,6 +63,9 @@ export interface GitConfig {
 
 export type EngineId = 'hugo';
 
+/** Frontmatter delimiter style for posts the plugin scaffolds. */
+export type FrontmatterFormat = 'yaml' | 'toml';
+
 export interface SiteConfig {
   /** Folder within the vault where blog posts live, e.g. "content/posts". */
   postsFolder: string;
@@ -70,6 +73,8 @@ export interface SiteConfig {
   siteBaseUrl: string;
   /** Whether new posts created via "New post" start as drafts. */
   newPostsAreDrafts: boolean;
+  /** Frontmatter style for new posts. `yaml` (---) or `toml` (+++). */
+  frontmatterFormat: FrontmatterFormat;
   engine: EngineId;
 }
 
@@ -209,5 +214,10 @@ export interface EngineAdapter {
   /** Build the public URL for a post given its vault-relative file path. */
   permalinkFor(postFilePath: string, settings: PluginSettings): string;
   /** New-post markdown body + frontmatter. */
-  scaffoldPost(opts: { title: string; date: Date; draft: boolean }): string;
+  scaffoldPost(opts: {
+    title: string;
+    date: Date;
+    draft: boolean;
+    format: FrontmatterFormat;
+  }): string;
 }

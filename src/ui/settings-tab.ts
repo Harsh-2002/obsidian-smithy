@@ -155,6 +155,18 @@ export class SmithySettingTab extends PluginSettingTab {
       );
 
     new Setting(c)
+      .setName('Frontmatter format')
+      .setDesc('Delimiter style for posts the plugin scaffolds. YAML (---) matches most Hugo blogs.')
+      .addDropdown((dd) => {
+        dd.addOption('yaml', 'YAML (---)');
+        dd.addOption('toml', 'TOML (+++)');
+        dd.setValue(this.host.settings.site.frontmatterFormat).onChange(async (v) => {
+          this.host.settings.site.frontmatterFormat = v as 'yaml' | 'toml';
+          await this.host.persist();
+        });
+      });
+
+    new Setting(c)
       .setName('Auto-rename pasted screenshots')
       .setDesc('Rename "Pasted image …" → <slug>-screenshot-N.<ext>')
       .addToggle((tog) =>

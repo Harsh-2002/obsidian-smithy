@@ -95,12 +95,31 @@ function formatValue(
   if (format === 'toml') {
     return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
   }
-  // YAML: only quote if the value contains : or starts with a special char.
-  if (/[:#{}[\],&*!|>%@`]/.test(value)) {
+  // YAML: quote when a bare scalar would be re-typed (number/bool/null/date),
+  // is empty, has edge whitespace, or contains structural characters.
+  if (needsYamlQuoting(value)) {
     return `'${value.replaceAll("'", "''")}'`;
   }
 
   return value;
+}
+
+/**
+ * True if `v` must be single-quoted to round-trip as a YAML string. Without
+ * this, a `cover`/`last_published` value like `12345`, `true`, `yes`, or
+ * `2026-05-28` would be parsed back as a number/bool/timestamp, not text.
+ */
+function needsYamlQuoting(v: string): boolean {
+  if (v === '') return true;
+  if (/^\s|\s$/.test(v)) return true; // leading/trailing whitespace
+  if (/^(true|false|yes|no|on|off|null|~)$/i.test(v)) return true; // bool/null
+  if (/^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(v)) return true; // number
+  if (/^\d{2,4}[-:]\d/.test(v)) return true; // date / time-ish
+  if (/^[!&*?|>@%"'`#,[\]{} -]/.test(v)) return true; // unsafe leading indicator
+  if (/:\s|:$|\s#/.test(v)) return true; // ": " mapping / trailing ":" / " #" comment
+  if (/[{}[\],&*!|>%@`]/.test(v)) return true; // flow / special characters
+
+  return false;
 }
 
 function replaceOrAppend(

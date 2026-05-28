@@ -79,6 +79,21 @@ Body.
     expect(out).toMatch(/colons: 'a: b'/);
   });
 
+  it('quotes YAML strings that look like numbers / bools / dates', () => {
+    const yamlPost = '---\ntitle: Hello\n---\n\nBody.\n';
+
+    expect(updateFrontmatter(yamlPost, 'cover', '12345')).toContain("cover: '12345'");
+    expect(updateFrontmatter(yamlPost, 'flag', 'yes')).toContain("flag: 'yes'");
+    expect(updateFrontmatter(yamlPost, 'when', '2026-05-28')).toContain("when: '2026-05-28'");
+  });
+
+  it('quotes YAML strings with edge whitespace, leaves clean text bare', () => {
+    const yamlPost = '---\ntitle: Hello\n---\n\nBody.\n';
+
+    expect(updateFrontmatter(yamlPost, 'pad', ' trailing ')).toContain("pad: ' trailing '");
+    expect(updateFrontmatter(yamlPost, 'plain', 'just text')).toContain('plain: just text');
+  });
+
   it('is a no-op when the body has unparseable frontmatter (returns unchanged)', () => {
     const broken = '+++\nunterminated\n';
     const out = updateFrontmatter(broken, 'k', 'v');

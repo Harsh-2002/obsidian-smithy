@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     postsFolder: 'content/posts',
     siteBaseUrl: '',
     newPostsAreDrafts: false,
+    frontmatterFormat: 'yaml',
     engine: 'hugo',
   },
   storage: {

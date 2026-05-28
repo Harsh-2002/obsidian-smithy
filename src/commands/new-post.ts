@@ -110,6 +110,7 @@ class NewPostModal extends Modal {
       title: this.title.trim(),
       date: new Date(),
       draft: this.settings.site.newPostsAreDrafts,
+      format: this.settings.site.frontmatterFormat,
     });
 
     const created = await this.app.vault.create(file, body);
