@@ -1,6 +1,6 @@
 {
   "name": "obsidian-smithy",
-  "version": "2026.05.26",
+  "version": "2026.05.28",
   "description": "Publish from Obsidian to a static-site GitHub repo with S3-compatible asset uploads.",
   "main": "main.js",
   "scripts": {
